@@ -1,2 +1,2 @@
 # candid
-Browser extension for candid fact-checking using Reddit + TikTok
+Your ethical-LLM friend who give you the uncensored insight into current news and any topics
