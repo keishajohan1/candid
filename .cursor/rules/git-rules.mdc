@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---  
+- Ensure you create a new Git branch every time you make edits to the code
+- Do not commit directly to main or develop.

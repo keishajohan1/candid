@@ -1,0 +1,26 @@
+---
+alwaysApply: true
+---
+- Keep the README.md focused on high-level documentation only:
+    - Overview
+    - Tech stack 
+    - Project structure 
+    - Endpoint list (names + paths only, no full JSON examples)
+    - Setup instructions
+    - Test instructions 
+    - Deployment URL 
+    - Implementation status
+    - Roles
+- Do NOT include in README:
+    - Full endpoint response samples
+    - Large code blocks
+    - Detailed data models
+    - Long troubleshooting sections
+    - Test output
+    - Deep architectural explanations
+- Create additional files for detailed documentation:
+    - docs/endpoints.md → detailed endpoint documentation
+    - docs/architecture.md → architecture overview
+    - docs/setup.md → extended environment instructions
+    - docs/troubleshooting.md → logs, error cases
+- If a change introduces too much complexity for the README, move the detail to /docs and link it from README.

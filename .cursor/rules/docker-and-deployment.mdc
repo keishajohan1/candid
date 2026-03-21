@@ -1,0 +1,15 @@
+---
+alwaysApply: true
+---
+- The Dockerfile must:
+    - Use a Python 3.11 slim image
+    - Install dependencies from requirements.txt
+    - Copy the app code
+    - Expose port 8080
+    - Run the server with uvicorn
+- Do not include secrets or service account JSON files in the Docker image.
+- Cloud Run deployment YAML must:
+    - Expose port 8080
+    - Use environment variables for configuration
+    - Reference the correct image built by CI
+- Any changes to Dockerfile or Cloud Run configuration must be reflected in README.md
