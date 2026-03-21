@@ -1,11 +1,15 @@
+import logging
 from functools import lru_cache
 from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-BASE_DIR = Path(__file__).resolve().parents[2]
-ENV_FILE = BASE_DIR / ".env"
+# backend/app/core/config.py -> parents[2] == backend root (where .env lives)
+BACKEND_ROOT: Path = Path(__file__).resolve().parents[2]
+ENV_FILE_PATH: Path = BACKEND_ROOT / ".env"
+
+_logger = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
@@ -39,7 +43,8 @@ class Settings(BaseSettings):
     playwright_browsers_path: str = Field(default="", alias="PLAYWRIGHT_BROWSERS_PATH")
 
     model_config = SettingsConfigDict(
-        env_file=ENV_FILE,
+        env_file=ENV_FILE_PATH,
+        env_file_encoding="utf-8",
         extra="ignore",
     )
 
@@ -53,3 +58,15 @@ def get_settings() -> Settings:
 
 
 settings = get_settings()
+
+
+def log_env_debug_status() -> None:
+    """Temporary safe startup hint: never logs secrets."""
+    s = get_settings()
+    _logger.info(
+        "Config env: env_file=%s env_file_exists=%s anthropic_key_present=%s claude_model=%s",
+        ENV_FILE_PATH,
+        ENV_FILE_PATH.is_file(),
+        s.has_claude_key(),
+        s.claude_model,
+    )

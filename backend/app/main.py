@@ -4,10 +4,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes.chat import router as chat_router
 from app.api.routes.health import router as health_router
 from app.api.routes.ingest import router as ingest_router
-from app.core.config import settings
+from app.core.config import log_env_debug_status, settings
 from app.core.logging import configure_logging
 
 configure_logging(settings.log_level)
+log_env_debug_status()
 
 app = FastAPI(
     title=settings.app_name,
