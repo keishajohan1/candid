@@ -1,7 +1,7 @@
 :root {
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   color: #111827;
-  background: #f3f4f6;
+  background: #202123;
 }
 
 * {
@@ -12,54 +12,217 @@ body {
   margin: 0;
 }
 
-.app-shell {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
+.app-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #343541;
 }
 
-.app-header h1 {
+.app-topbar {
+  padding: 0.75rem 1rem;
+  background: #202123;
+  color: #ececf1;
+  border-bottom: 1px solid #4d4d4f;
+}
+
+.app-topbar h1 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.app-topbar p {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  color: #c5c5d2;
+}
+
+.chatgpt-layout {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.chat-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: #202123;
+  color: #ececf1;
+  padding: 1rem;
+  border-right: 1px solid #4d4d4f;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sidebar-brand {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.sidebar-hint,
+.sidebar-meta {
+  font-size: 0.75rem;
+  color: #8e8ea0;
   margin: 0;
 }
 
-.app-header p {
-  margin: 0.4rem 0 1.2rem;
-  color: #4b5563;
+.sidebar-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.8rem;
 }
 
-.chat-shell {
-  display: grid;
-  gap: 1rem;
+.sidebar-label input {
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #565869;
+  background: #40414f;
+  color: #ececf1;
 }
 
-.chat-form,
-.chat-output {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 1rem;
-  border: 1px solid #e5e7eb;
-}
-
-.chat-form textarea {
-  width: 100%;
-  margin-top: 0.5rem;
-  margin-bottom: 0.75rem;
-}
-
-.chat-form button {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 8px;
-  background: #2563eb;
-  color: white;
+.sidebar-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: #c5c5d2;
   cursor: pointer;
 }
 
-.chat-form button:disabled {
-  opacity: 0.6;
+.chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #343541;
+}
+
+.messages-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.empty-hint {
+  color: #8e8ea0;
+  font-size: 0.85rem;
+  max-width: 560px;
+  margin: 2rem auto;
+  text-align: center;
+}
+
+.bubble {
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+}
+
+.bubble-user {
+  background: #343541;
+  border: 1px solid #565869;
+}
+
+.bubble-assistant {
+  background: #444654;
+  border: 1px solid #565869;
+}
+
+.bubble-role {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8e8ea0;
+  margin-bottom: 0.35rem;
+}
+
+.bubble-text {
+  margin: 0;
+  color: #ececf1;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.loading-bubble {
+  opacity: 0.85;
+}
+
+.error-banner {
+  margin: 0 1rem;
+  padding: 0.5rem 0.75rem;
+  background: #5c2b2b;
+  color: #fecaca;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.composer {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem 1rem;
+  border-top: 1px solid #4d4d4f;
+  background: #343541;
+  align-items: flex-end;
+}
+
+.composer textarea {
+  flex: 1;
+  resize: none;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #565869;
+  background: #40414f;
+  color: #ececf1;
+  font: inherit;
+}
+
+.composer button {
+  padding: 0.65rem 1.1rem;
+  border: none;
+  border-radius: 8px;
+  background: #19c37d;
+  color: #0d0d0d;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.composer button:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
-.error {
-  color: #b91c1c;
+.debug-panel {
+  margin: 0 1rem 1rem;
+  padding: 0.75rem;
+  background: #202123;
+  border: 1px solid #4d4d4f;
+  border-radius: 8px;
+  color: #c5c5d2;
+  font-size: 0.75rem;
+}
+
+.debug-panel ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.debug-errors {
+  margin-top: 0.5rem;
+  color: #fca5a5;
+}
+
+.debug-sources {
+  margin-top: 0.5rem;
+}
+
+.debug-sources a {
+  color: #7dd3fc;
 }

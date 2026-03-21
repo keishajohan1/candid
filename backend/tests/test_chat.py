@@ -13,3 +13,5 @@ def test_chat_returns_placeholder_when_no_api_key() -> None:
     payload = response.json()
     assert payload["mode"] in {"mock", "live"}
     assert "response_text" in payload
+    assert "debug" in payload
+    assert payload["debug"].get("fetch_sources") is False
