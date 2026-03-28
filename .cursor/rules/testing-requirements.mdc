@@ -1,0 +1,12 @@
+---
+alwaysApply: true
+---
+- Use pytest and pytest-cov for all tests
+- The test suite must maintain at least 80% coverage
+- Each router must include at least 5 test cases, covering:
+    - Success scenarios
+    - Error scenarios
+    - Edge cases
+- Tests must not depend on real BigQuery or MongoDB connections—only stubbed data
+- Tests must use FastAPI’s TestClient or httpx
+- When implementing new endpoints or features, generate the corresponding tests in the same MR

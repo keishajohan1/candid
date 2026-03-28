@@ -1,0 +1,16 @@
+---
+alwaysApply: true
+---
+- All project dependencies must be declared in requirements.txt
+- Standard dependencies must include:
+    - fastapi
+    - uvicorn[standard]
+    - pytest
+    - pytest-cov 
+    - httpx
+    - python-dotenv
+- Future DB dependencies must be grouped under a commented section called # databases (future).
+- Any modification to dependencies must trigger:
+    - README update
+    - Dockerfile update
+    - CI pipeline validation

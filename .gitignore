@@ -1,0 +1,37 @@
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+dist/
+*.tsbuildinfo
+
+# IDE/editor
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# Playwright
+playwright-report/
+test-results/
+
+# OS temp
+*.tmp
+*.temp

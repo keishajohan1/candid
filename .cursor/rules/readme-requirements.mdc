@@ -1,0 +1,20 @@
+---
+alwaysApply: true
+---
+- Ensure a README.md file exists at the root of the project. 
+- The README.md must always include:
+    - Project overview and purpose
+    - Technology stack used
+    - Project folder structure
+    - List of all API endpoints
+    - Local development setup instructions
+    - Instructions on how to run tests (pytest + coverage)
+    - Deployment information (Cloud Run URL placeholder or actual link)
+    - Current implementation status (completed vs pending endpoints)
+    - Team member roles
+- Update the README.md whenever:
+    - An API endpoint is added, modified, or removed
+    - The project structure changes
+    - Dependencies or environment setup change
+    - Deployment configuration changes
+- Do not generate or modify application code that affects any of these areas without also updating the README.md.
