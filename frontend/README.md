@@ -28,9 +28,11 @@ npm run dev
 ## UI behavior
 
 - **Topic** — optional; sent as `topic` to `/chat`.
-- **Fetch Reddit + TikTok** — sets `fetch_sources: true` (slow; may fail without Playwright/TikTok access).
+- **Fetch Reddit excerpts** — sets `fetch_sources: true` (may be slow; depends on Reddit availability).
 - **turn_index** — derived from the number of assistant messages in the thread (+1 for next turn), sent to the backend for escalation rules.
 
 ## Backend requirements
 
 The API **will not start** without a non-empty **`ANTHROPIC_API_KEY`** in **`backend/.env`**. Successful chat responses use **`mode: live`** from Anthropic.
+
+If the browser shows **Failed to fetch** but the API works in curl, open the UI at **`http://localhost:5173`** (not `127.0.0.1`) or set **`FRONTEND_ORIGIN`** in **`backend/.env`** to match the exact origin you use. The backend allows both localhost and 127.0.0.1 for the same port by default.

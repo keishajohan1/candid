@@ -7,7 +7,6 @@ from app.models.chat import ChatRequest, ChatResponse
 from app.services.claude_service import ClaudeService
 from app.services.safety.moderation import ModerationService
 from app.services.scrapers.reddit_service import RedditIngestionService
-from app.services.scrapers.tiktok_scraper import TikTokScraperService
 from app.utils.prompts import (
     build_socratic_system_prompt,
     build_socratic_user_content,
@@ -18,9 +17,8 @@ from app.utils.prompts import (
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-# Small limits to avoid rate limits / slow chat path
-_CHAT_REDDIT_LIMIT = 4
-_CHAT_TIKTOK_LIMIT = 2
+# Reddit: limit for post search; comment fetches disabled by default (see RedditIngestionService)
+_CHAT_REDDIT_LIMIT = 25
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -42,7 +40,6 @@ async def chat(payload: ChatRequest) -> ChatResponse:
     }
 
     reddit_items: list[Any] = []
-    tiktok_items: list[Any] = []
     ingest_errors: list[dict[str, Any]] = []
 
     if payload.fetch_sources:
@@ -53,8 +50,11 @@ async def chat(payload: ChatRequest) -> ChatResponse:
             reddit = RedditIngestionService()
             r_result = await reddit.search(
                 query=q,
+                topic=(payload.topic or "").strip(),
+                turn=payload.turn_index,
                 limit=_CHAT_REDDIT_LIMIT,
                 include_top_comments=False,
+                comments_limit=5,
             )
             reddit_items = list(r_result.items)
             for e in r_result.errors:
@@ -63,17 +63,7 @@ async def chat(payload: ChatRequest) -> ChatResponse:
             logger.warning("Reddit ingestion in chat failed: %s", exc)
             ingest_errors.append({"source": "reddit", "code": "exception", "message": str(exc)})
 
-        try:
-            tiktok = TikTokScraperService()
-            t_result = await tiktok.search(query=q, limit=_CHAT_TIKTOK_LIMIT)
-            tiktok_items = list(t_result.items)
-            for e in t_result.errors:
-                ingest_errors.append({"source": "tiktok", "code": e.code, "message": e.message})
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("TikTok ingestion in chat failed: %s", exc)
-            ingest_errors.append({"source": "tiktok", "code": "exception", "message": str(exc)})
-
-    prompt_items = source_items_for_prompt_from_ingestion(reddit_items, tiktok_items)
+    prompt_items = source_items_for_prompt_from_ingestion(reddit_items)
     sources_out = lightweight_sources_for_response(prompt_items)
 
     system_prompt = build_socratic_system_prompt(payload.topic)
@@ -96,7 +86,6 @@ async def chat(payload: ChatRequest) -> ChatResponse:
         {
             "source_count": len(sources_out),
             "reddit_item_count": len(reddit_items),
-            "tiktok_item_count": len(tiktok_items),
             "ingest_errors": ingest_errors,
             "live_claude": True,
         }

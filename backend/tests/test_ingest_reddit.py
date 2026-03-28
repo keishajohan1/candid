@@ -6,7 +6,15 @@ from fastapi.testclient import TestClient
 
 
 def test_reddit_ingest_route_with_mocked_service(monkeypatch) -> None:
-    async def fake_search(self, query: str, limit: int, include_top_comments: bool, comments_limit: int) -> IngestResponse:  # noqa: ARG001
+    async def fake_search(  # noqa: ARG001
+        self,
+        query: str,
+        limit: int = 25,
+        include_top_comments: bool = False,
+        comments_limit: int = 5,
+        turn: int = 0,
+        topic: str = "",
+    ) -> IngestResponse:
         return IngestResponse(
             source="reddit",
             query=query,

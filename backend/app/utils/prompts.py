@@ -90,12 +90,9 @@ def build_socratic_user_content(
 
 def source_items_for_prompt_from_ingestion(
     reddit_items: list[Any],
-    tiktok_items: list[Any],
-    max_each: int = 5,
+    max_items: int = 5,
 ) -> list[dict[str, Any]]:
-    """
-    Convert SourceContent-like objects (Pydantic models) to prompt-friendly dicts.
-    """
+    """Convert SourceContent-like objects (Pydantic models) to prompt-friendly dicts."""
     out: list[dict[str, Any]] = []
 
     def add_from_model(obj: Any) -> None:
@@ -114,9 +111,7 @@ def source_items_for_prompt_from_ingestion(
             }
         )
 
-    for obj in reddit_items[:max_each]:
-        add_from_model(obj)
-    for obj in tiktok_items[:max_each]:
+    for obj in reddit_items[:max_items]:
         add_from_model(obj)
     return out
 

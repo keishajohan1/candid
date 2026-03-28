@@ -31,10 +31,6 @@ class Settings(BaseSettings):
 
     chroma_persist_dir: str = Field(default="./data/chroma", alias="CHROMA_PERSIST_DIR")
 
-    tiktok_headless: bool = Field(default=True, alias="TIKTOK_HEADLESS")
-    tiktok_locale: str = Field(default="en-US", alias="TIKTOK_LOCALE")
-    tiktok_timeout_seconds: int = Field(default=20, alias="TIKTOK_TIMEOUT_SECONDS")
-
     reddit_user_agent: str = Field(
         default="CandidBot/0.1 (+https://example.com)",
         alias="REDDIT_USER_AGENT",
@@ -42,12 +38,6 @@ class Settings(BaseSettings):
     reddit_timeout_seconds: int = Field(default=20, alias="REDDIT_TIMEOUT_SECONDS")
 
     enable_safety_filter: bool = Field(default=True, alias="ENABLE_SAFETY_FILTER")
-
-    tiktok_user_agent: str = Field(default="", alias="TIKTOK_USER_AGENT")
-    tiktok_session_cookie: str = Field(default="", alias="TIKTOK_SESSION_COOKIE")
-    tiktok_proxy_url: str = Field(default="", alias="TIKTOK_PROXY_URL")
-    tiktok_wait_ms: int = Field(default=2500, alias="TIKTOK_WAIT_MS")
-    playwright_browsers_path: str = Field(default="", alias="PLAYWRIGHT_BROWSERS_PATH")
 
     model_config = SettingsConfigDict(
         env_file=ENV_FILE_PATH,
@@ -65,6 +55,16 @@ class Settings(BaseSettings):
 
     def has_claude_key(self) -> bool:
         return bool(self.anthropic_api_key and self.anthropic_api_key.strip())
+
+    def cors_allow_origins(self) -> list[str]:
+        """Primary Vite origin plus localhost/127.0.0.1 mirror (avoids browser Failed to fetch)."""
+        primary = self.frontend_origin.strip().rstrip("/")
+        out = [primary]
+        if "localhost" in primary:
+            out.append(primary.replace("localhost", "127.0.0.1", 1))
+        elif "127.0.0.1" in primary:
+            out.append(primary.replace("127.0.0.1", "localhost", 1))
+        return list(dict.fromkeys(out))
 
 
 @lru_cache

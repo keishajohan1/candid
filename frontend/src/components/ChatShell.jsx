@@ -46,7 +46,6 @@ export default function ChatShell() {
         mode: data.mode,
         source_count: data.debug?.source_count ?? 0,
         reddit_item_count: data.debug?.reddit_item_count ?? 0,
-        tiktok_item_count: data.debug?.tiktok_item_count ?? 0,
         ingest_errors: data.debug?.ingest_errors ?? [],
         sources: data.sources ?? [],
       });
@@ -86,7 +85,7 @@ export default function ChatShell() {
             checked={fetchSources}
             onChange={(e) => setFetchSources(e.target.checked)}
           />
-          Fetch Reddit + TikTok excerpts (slow / may fail)
+          Fetch Reddit excerpts for the prompt (may be slow)
         </label>
         <p className="sidebar-meta">Next turn_index: {turnIndex}</p>
       </aside>
@@ -139,7 +138,6 @@ export default function ChatShell() {
               <li>Mode: {lastDebug.mode}</li>
               <li>Source count (returned): {lastDebug.source_count}</li>
               <li>Reddit items (ingested): {lastDebug.reddit_item_count}</li>
-              <li>TikTok items (ingested): {lastDebug.tiktok_item_count}</li>
             </ul>
             {lastDebug.ingest_errors?.length > 0 && (
               <div className="debug-errors">

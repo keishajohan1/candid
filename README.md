@@ -9,12 +9,17 @@ The project is designed to guide users through facts, sources, and multiple pers
 - `frontend/` React + Vite web client scaffold.
 - `docs/` future architecture, product, and operations docs.
 
+## API endpoints (backend, prefix `/api/v1` unless noted)
+
+- `GET /health`
+- `POST /api/v1/chat`
+- `POST /api/v1/ingest/reddit`
+- `GET /api/v1/social-data` — Reddit sample (`topic`, `turn`, optional `q`)
+
 ## Core MVP behavior today
 
 - `GET /health` returns service status and runtime metadata.
-- `POST /chat` returns:
-  - live Claude output when `ANTHROPIC_API_KEY` is configured
-  - safe placeholder educational output when API key is missing
+- `POST /api/v1/chat` calls Anthropic when `ANTHROPIC_API_KEY` is set in `backend/.env` (required for the app to start).
 
 ## Local development (no virtual environment workflow)
 
@@ -29,9 +34,7 @@ Use your system Python interpreter (3.11+) directly and point your IDE to it.
    - `pip install -r backend/requirements.txt`
 3. Copy environment file and fill values:
    - `copy .env.example .env`
-4. Install Playwright browser binaries (for future scraping modules):
-   - `python -m playwright install chromium`
-5. Run backend:
+4. Run backend:
    - `uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`
    - Run from `backend/` directory.
 
@@ -72,7 +75,6 @@ Use `docker-compose.yml` for convenience local orchestration of both services.
 
 - Advanced Claude prompt orchestration and multi-turn memory
 - Full safety policy layer and bias/risk scoring
-- Real TikTok scraping workflows (Playwright pipeline)
-- Reddit ingestion/retrieval logic
+- Reddit ingestion/retrieval enhancements
 - ChromaDB retrieval ranking and citation rendering
 - Auth, durable conversation persistence, and analytics dashboards

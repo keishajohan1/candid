@@ -16,7 +16,7 @@ class ChatRequest(BaseModel):
 
     fetch_sources: bool = Field(
         default=False,
-        description="If true, backend runs Reddit/TikTok ingestion before calling the LLM.",
+        description="If true, backend runs Reddit ingestion before calling the LLM.",
     )
     source_query: str | None = Field(
         default=None,

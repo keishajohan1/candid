@@ -57,7 +57,6 @@ Scaffold a runnable, production-minded starter codebase that matches your reques
   - `[backend/app/core/config.py](backend/app/core/config.py)`
   - `[backend/app/core/logging.py](backend/app/core/logging.py)`
   - `[backend/app/services/claude_service.py](backend/app/services/claude_service.py)`
-  - `[backend/app/services/scrapers/tiktok_scraper.py](backend/app/services/scrapers/tiktok_scraper.py)`
   - `[backend/app/services/scrapers/reddit_service.py](backend/app/services/scrapers/reddit_service.py)`
   - `[backend/app/services/rag/chroma_client.py](backend/app/services/rag/chroma_client.py)`
   - `[backend/app/services/safety/moderation.py](backend/app/services/safety/moderation.py)`
@@ -91,11 +90,11 @@ Scaffold a runnable, production-minded starter codebase that matches your reques
 
 - `requirements.txt` to include:
   - runtime: `fastapi`, `uvicorn[standard]`, `anthropic`, `pydantic`, `pydantic-settings`, `httpx`, `python-dotenv`
-  - roadmap-ready: `playwright`, `chromadb`
+  - roadmap-ready: `chromadb`
   - testing: `pytest`, `pytest-asyncio`, `pytest-cov`
 - Config centralized with Pydantic settings from environment variables, including:
   - `ANTHROPIC_API_KEY`, `CLAUDE_MODEL`, `APP_ENV`, `LOG_LEVEL`, `FRONTEND_ORIGIN`, `CHROMA_PERSIST_DIR`
-  - scraper placeholders (`TIKTOK_HEADLESS`, `TIKTOK_LOCALE`, `REDDIT_USER_AGENT`)
+  - scraper placeholders (`REDDIT_USER_AGENT`, `REDDIT_TIMEOUT_SECONDS`)
 
 ## Cloud Run & Containerization
 

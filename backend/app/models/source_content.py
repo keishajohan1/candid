@@ -13,7 +13,7 @@ class EngagementMetrics(BaseModel):
 
 
 class SourceContent(BaseModel):
-    source: str = Field(..., description="Platform name: reddit, tiktok, etc.")
+    source: str = Field(..., description="Platform name (e.g. reddit).")
     platform_id: str = Field(..., description="Original platform item ID")
     content_type: str = Field(..., description="post, comment, video, caption, etc.")
     author: str | None = None
