@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 
 
-def test_chat_returns_placeholder_when_no_api_key() -> None:
+def test_chat_returns_live_response_with_stubbed_claude() -> None:
     client = TestClient(app)
     response = client.post(
         "/api/v1/chat",
@@ -11,7 +11,8 @@ def test_chat_returns_placeholder_when_no_api_key() -> None:
     )
     assert response.status_code == 200
     payload = response.json()
-    assert payload["mode"] in {"mock", "live"}
+    assert payload["mode"] == "live"
     assert "response_text" in payload
+    assert payload["response_text"] == "Test assistant reply."
     assert "debug" in payload
     assert payload["debug"].get("fetch_sources") is False

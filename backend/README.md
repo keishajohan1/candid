@@ -13,20 +13,21 @@ The backend provides Candid API modules: **Socratic debate chat** (Claude consum
 
 | Item | Required for | Notes |
 |------|----------------|-------|
-| **`ANTHROPIC_API_KEY`** | Live Claude chat | Optional for running the API. Put in **repo root** `.env` (see `.env.example`). Without it, `/chat` returns **`mode: mock`** with a Socratic-style fallback. |
+| **`ANTHROPIC_API_KEY`** | **Required** | Non-empty value in **`backend/.env`**. The app **fails startup** (Pydantic validation + lifespan) if missing. Chat always calls Anthropic; there is no mock LLM path. |
+| **`CLAUDE_MAX_OUTPUT_TOKENS`** | Long replies | Default **8192** (range 256–64000). Increase when users send very long prompts and need longer assistant output; respect Anthropic model limits. |
 | **`REDDIT_*`** | Reddit ingestion | **No API key** in current code — uses public JSON endpoints. Set **`REDDIT_USER_AGENT`** to something identifiable; optional **`REDDIT_TIMEOUT_SECONDS`**. |
 | **Playwright + Chromium** | TikTok ingestion | Run `python -m playwright install chromium`. TikTok often **blocks** datacenter/headless traffic; optional **`TIKTOK_SESSION_COOKIE`**, **`TIKTOK_PROXY_URL`**, **`TIKTOK_USER_AGENT`**. |
-| **`.env` file** | Local settings | Copy `.env.example` → `.env` at **repository root**. Pydantic loads `.env` from the process working directory (run `uvicorn` from `backend/`; if variables are missing, set them in the environment or place `.env` where the loader finds it — see note below). |
+| **`.env` file** | Local settings | Copy **`.env.example`** → **`backend/.env`** and set **`ANTHROPIC_API_KEY`**. Resolved by path from `app/core/config.py` (see note below). |
 
 ### `.env` loading note
 
-`Settings` uses `env_file=".env"`. If you start uvicorn from `backend/`, create **`backend/.env`** or export variables in the shell. If you start from repo root, **`./.env`** at root is typical. Use one location consistently.
+`Settings` resolves **`backend/.env`** from the config file path, so the key and **`CLAUDE_MODEL` / `CLAUDE_MAX_OUTPUT_TOKENS`** load regardless of shell working directory.
 
 ## Local setup (system Python, no venv)
 
 1. `pip install -r backend/requirements.txt`
 2. `python -m playwright install chromium` (only if testing TikTok)
-3. Copy env template: `copy .env.example .env` (Windows) at repo root, then add `ANTHROPIC_API_KEY` if you want live mode
+3. Copy env template to **`backend/.env`**, set **`ANTHROPIC_API_KEY`** (required) and **`CLAUDE_MODEL`** if needed (default `claude-sonnet-4-20250514`)
 4. `cd backend` → `uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`
 
 ## Chat behavior (rules location)

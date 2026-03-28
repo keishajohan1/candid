@@ -31,6 +31,6 @@ npm run dev
 - **Fetch Reddit + TikTok** — sets `fetch_sources: true` (slow; may fail without Playwright/TikTok access).
 - **turn_index** — derived from the number of assistant messages in the thread (+1 for next turn), sent to the backend for escalation rules.
 
-## Live vs mock
+## Backend requirements
 
-If the backend has no **`ANTHROPIC_API_KEY`**, responses are **`mode: mock`** but still follow a short Socratic-style fallback. Set the key in backend `.env` for **live** Claude output.
+The API **will not start** without a non-empty **`ANTHROPIC_API_KEY`** in **`backend/.env`**. Successful chat responses use **`mode: live`** from Anthropic.

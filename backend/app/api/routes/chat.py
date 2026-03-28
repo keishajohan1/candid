@@ -30,7 +30,7 @@ async def chat(payload: ChatRequest) -> ChatResponse:
     if not safety_result.allowed:
         return ChatResponse(
             response_text=safety_result.message,
-            mode="mock",
+            mode="blocked",
             sources=[],
             reflection={"notice": "Request blocked by preliminary safety precheck."},
             debug={"blocked": True},
@@ -98,7 +98,7 @@ async def chat(payload: ChatRequest) -> ChatResponse:
             "reddit_item_count": len(reddit_items),
             "tiktok_item_count": len(tiktok_items),
             "ingest_errors": ingest_errors,
-            "live_claude": result["mode"] == "live",
+            "live_claude": True,
         }
     )
 

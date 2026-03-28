@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -10,10 +12,19 @@ from app.core.logging import configure_logging
 configure_logging(settings.log_level)
 log_env_debug_status()
 
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    if not settings.anthropic_api_key or not settings.anthropic_api_key.strip():
+        raise RuntimeError("ANTHROPIC_API_KEY is required and not set")
+    yield
+
+
 app = FastAPI(
     title=settings.app_name,
     version="0.1.0",
     description="Candid backend API for neutral educational chat experiences.",
+    lifespan=lifespan,
 )
 
 app.add_middleware(

@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 
 class ChatRequest(BaseModel):
-    message: str = Field(..., min_length=1, max_length=4000)
+    message: str = Field(..., min_length=1, max_length=100_000)
     topic: str | None = Field(default=None, max_length=200)
     conversation_id: str | None = None
     """Increment per user-assistant exchange for escalation rules (client-supplied until persistence exists)."""

@@ -2,7 +2,7 @@ import logging
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # backend/app/core/config.py -> parents[2] == backend root (where .env lives)
@@ -19,8 +19,15 @@ class Settings(BaseSettings):
     api_prefix: str = Field(default="/api/v1", alias="API_PREFIX")
     frontend_origin: str = Field(default="http://localhost:5173", alias="FRONTEND_ORIGIN")
 
-    anthropic_api_key: str | None = Field(default=None, alias="ANTHROPIC_API_KEY")
-    claude_model: str = Field(default="claude-3-5-sonnet-latest", alias="CLAUDE_MODEL")
+    anthropic_api_key: str = Field(..., alias="ANTHROPIC_API_KEY")
+    claude_model: str = Field(default="claude-sonnet-4-20250514", alias="CLAUDE_MODEL")
+    # Max new tokens per assistant message (tune via CLAUDE_MAX_OUTPUT_TOKENS; respect model limits).
+    claude_max_output_tokens: int = Field(
+        default=8192,
+        ge=256,
+        le=64000,
+        alias="CLAUDE_MAX_OUTPUT_TOKENS",
+    )
 
     chroma_persist_dir: str = Field(default="./data/chroma", alias="CHROMA_PERSIST_DIR")
 
@@ -47,6 +54,14 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+    @field_validator("anthropic_api_key", mode="after")
+    @classmethod
+    def anthropic_key_nonempty(cls, v: str) -> str:
+        s = v.strip()
+        if not s:
+            raise ValueError("ANTHROPIC_API_KEY is required and must be non-empty")
+        return s
 
     def has_claude_key(self) -> bool:
         return bool(self.anthropic_api_key and self.anthropic_api_key.strip())
