@@ -66,14 +66,13 @@ async def chat(payload: ChatRequest) -> ChatResponse:
     prompt_items = source_items_for_prompt_from_ingestion(reddit_items)
     sources_out = lightweight_sources_for_response(prompt_items)
 
-    system_prompt = build_socratic_system_prompt(payload.topic)
-    user_content = build_socratic_user_content(
-        message=payload.message,
+    system_prompt = build_socratic_system_prompt(
         topic=payload.topic,
         turn_index=payload.turn_index,
         history=payload.history,
         source_items=prompt_items,
     )
+    user_content = build_socratic_user_content(message=payload.message)
 
     claude_service = ClaudeService()
     result = await claude_service.generate_socratic_response(
