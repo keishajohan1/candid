@@ -26,6 +26,8 @@ You challenge. You illuminate. You let the user do the arriving.
 
 Debate focus (may be general if not specified): {topic_line}
 
+{verified_facts}
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SECTION 1 — COGNITIVE EXECUTION PROTOCOL
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -360,6 +362,7 @@ def build_socratic_system_prompt(
     turn_index: int,
     history: list[str],
     source_items: list[dict[str, Any]],
+    facts: list[str],
 ) -> str:
     history = [h.strip() for h in history if h and h.strip()][-8:]
     history_block = (
@@ -369,12 +372,18 @@ def build_socratic_system_prompt(
         else "No prior user messages recorded for this thread."
     )
     excerpts_block = format_source_block_for_prompt(source_items)
+    facts_block = (
+        "VERIFIED FACT LAYER (Use to anchor your logical probes):\n"
+        + "\n".join(f"· {f}" for f in facts)
+        if facts else ""
+    )
 
     return SOCRATIC_DEBATE_SYSTEM_PROMPT_TEMPLATE.format(
         topic_line=_topic_line(topic),
         turn_index=turn_index,
         prior_user_lines=history_block,
         social_media_excerpts=excerpts_block,
+        verified_facts=facts_block,
     )
 
 
@@ -395,7 +404,22 @@ def source_items_for_prompt_from_ingestion(
         url = str(getattr(obj, "url", "") or "")
         source = getattr(obj, "source", "unknown")
         author = getattr(obj, "author", None)
-        label = f"{source}" + (f" (@{author})" if author else "")
+        classification = getattr(obj, "content_classification", None)
+        subreddit = getattr(obj, "subreddit", None)
+        lean = getattr(obj, "ideological_lean", None)
+
+        label_parts = [source]
+        if subreddit:
+            label_parts.append(f"r/{subreddit}")
+        if lean and lean != "neutral":
+            label_parts.append(f"({lean}-leaning)")
+        if author:
+            label_parts.append(f"@{author}")
+        if classification:
+            label_parts.append(f"[Type: {classification}]")
+            
+        label = " | ".join(label_parts)
+
         out.append(
             {
                 "source": source,

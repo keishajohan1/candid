@@ -17,13 +17,33 @@ logger = logging.getLogger(__name__)
 
 SORT_STRATEGIES = ["relevance", "top", "new", "hot", "comments"]
 
-SUBREDDITS_BY_TOPIC: dict[str, list[str]] = {
-    "climate change": ["climate", "environment", "collapse", "climateskeptics", "worldnews"],
-    "immigration": ["immigration", "politics", "worldnews", "conservative", "liberal"],
-    "economy": ["economics", "economy", "personalfinance", "antiwork", "wallstreetbets"],
-    "elections": ["politics", "Ask_Politics", "Conservative", "Liberal", "worldnews"],
-    "telecoms": ["technology", "netsec", "worldnews", "geopolitics", "Futurology"],
-    "telecommunications": ["technology", "netsec", "worldnews", "geopolitics", "Futurology"],
+SUBREDDITS_BY_TOPIC: dict[str, dict[str, list[str]]] = {
+    "climate change": {
+        "left": ["climate", "environment", "collapse"],
+        "right": ["climateskeptics", "Conservative"],
+        "neutral": ["worldnews", "science"]
+    },
+    "immigration": {
+        "left": ["Liberal", "democrats", "politics"],
+        "right": ["Conservative", "Republican"],
+        "neutral": ["immigration", "worldnews"]
+    },
+    "economy": {
+        "left": ["antiwork", "LateStageCapitalism"],
+        "right": ["Conservative", "EconomicsRight"],
+        "neutral": ["economics", "economy", "personalfinance"]
+    },
+    "elections": {
+        "left": ["Liberal", "democrats", "politics"],
+        "right": ["Conservative", "Republican"],
+        "neutral": ["Ask_Politics", "worldnews"]
+    },
+    "telecoms": {
+        "neutral": ["technology", "netsec", "worldnews", "geopolitics", "Futurology"]
+    },
+    "telecommunications": {
+        "neutral": ["technology", "netsec", "worldnews", "geopolitics", "Futurology"]
+    },
 }
 
 DEFAULT_SUBREDDITS = ["worldnews", "politics", "changemyview", "AskReddit"]
@@ -73,6 +93,7 @@ class RedditIngestionService:
                                 comments_limit=comments_limit,
                                 headers=headers,
                                 query=query,
+                                lean=post.get("_ideological_lean", "neutral"),
                             )
                             items.extend(comments)
                         except Exception as exc:  # noqa: BLE001
@@ -129,13 +150,25 @@ class RedditIngestionService:
         headers: dict[str, str],
         turn: int,
     ) -> list[dict[str, Any]]:
-        subreddits = SUBREDDITS_BY_TOPIC.get(topic.lower(), DEFAULT_SUBREDDITS)
+        topic_map = SUBREDDITS_BY_TOPIC.get(topic.lower(), {"neutral": DEFAULT_SUBREDDITS})
+        
+        selected_subs = []
+        if "left" in topic_map and "right" in topic_map:
+            if topic_map["left"]: selected_subs.append((random.choice(topic_map["left"]), "left"))
+            if topic_map["right"]: selected_subs.append((random.choice(topic_map["right"]), "right"))
+            if topic_map.get("neutral"): selected_subs.append((random.choice(topic_map["neutral"]), "neutral"))
+        else:
+            neutral_subs = topic_map.get("neutral", DEFAULT_SUBREDDITS)
+            for sub in neutral_subs[:3]:
+                selected_subs.append((sub, "neutral"))
+
         tasks: list[Any] = [
             self._search_posts(client, query, limit, headers, turn),
         ]
-        for sub in subreddits[:3]:
+        sub_limit = limit // max(1, len(selected_subs))
+        for sub, lean in selected_subs:
             tasks.append(
-                self._search_subreddit(client, sub, query, limit // 2, headers)
+                self._search_subreddit(client, sub, query, sub_limit, headers, lean)
             )
         results = await asyncio.gather(*tasks, return_exceptions=True)
         posts: list[dict[str, Any]] = []
@@ -190,6 +223,7 @@ class RedditIngestionService:
         query: str,
         limit: int,
         headers: dict[str, str],
+        lean: str = "neutral",
     ) -> list[dict[str, Any]]:
         try:
             response = await client.get(
@@ -213,7 +247,12 @@ class RedditIngestionService:
             response.raise_for_status()
             payload = response.json()
             children = payload.get("data", {}).get("children", [])
-            return [child.get("data", {}) for child in children]
+            items = []
+            for child in children:
+                data = child.get("data", {})
+                data["_ideological_lean"] = lean
+                items.append(data)
+            return items
         except Exception as exc:  # noqa: BLE001
             logger.warning("Subreddit %s search failed: %s", subreddit, exc)
             return []
@@ -226,6 +265,7 @@ class RedditIngestionService:
         comments_limit: int,
         headers: dict[str, str],
         query: str,
+        lean: str = "neutral",
     ) -> list[SourceContent]:
         if not subreddit or not post_id:
             return []
@@ -262,6 +302,8 @@ class RedditIngestionService:
                             source="reddit",
                             platform_id=data.get("id", ""),
                             content_type="comment",
+                            subreddit=subreddit,
+                            ideological_lean=lean,
                             author=data.get("author"),
                             url=f"https://www.reddit.com{data.get('permalink', '')}",
                             title=None,
@@ -294,6 +336,8 @@ class RedditIngestionService:
             source="reddit",
             platform_id=data.get("id", ""),
             content_type="post",
+            subreddit=data.get("subreddit"),
+            ideological_lean=data.get("_ideological_lean", "neutral"),
             author=data.get("author"),
             url=post_url,
             title=data.get("title"),

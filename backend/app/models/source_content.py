@@ -16,6 +16,9 @@ class SourceContent(BaseModel):
     source: str = Field(..., description="Platform name (e.g. reddit).")
     platform_id: str = Field(..., description="Original platform item ID")
     content_type: str = Field(..., description="post, comment, video, caption, etc.")
+    content_classification: str | None = Field(default=None, description="Semantic type: argument, testimony, cited claim, consensus")
+    subreddit: str | None = None
+    ideological_lean: str | None = None
     author: str | None = None
     url: HttpUrl | str
     title: str | None = None
