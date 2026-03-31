@@ -81,3 +81,13 @@ Entries record prompts used for substantial AI-assisted changes (no secrets).
 **Changes implemented:** Updated `.github/workflows/ci.yml` by adding `defaults.run.working-directory: ./frontend` under the `test` job so `npm install` and `npm test` run in the frontend package directory.
 
 **Branch:** `fix/ci-frontend-working-directory`
+
+---
+
+## 2026-03-31 — `avalder`
+
+**Prompt (full text):** "The GitHub Actions workflow is failing with: npm error Missing script: \"test\". This means the workflow runs npm test but package.json inside frontend/ has no \"test\" script defined. In .github/workflows/ find the workflow file (test.yml, ci.yml, or deploy.yml) and replace the Run tests step with a Build step: remove Run tests / npm test and add Build / npm run build. Keep the test job with defaults working-directory ./frontend and install step. Then commit and push: git add .github/workflows/; git commit -m \"fix: replace npm test with npm run build in CI\"; git push origin avalder."
+
+**Changes implemented:** Replaced the `Run tests` step (`npm test`) with a `Build` step (`npm run build`) in `.github/workflows/ci.yml` to match the frontend scripts.
+
+**Branch:** `avalder`
