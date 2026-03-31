@@ -71,3 +71,13 @@ Entries record prompts used for substantial AI-assisted changes (no secrets).
 **Changes implemented:** Deleted scraper and `test_ingest_tiktok.py`; updated `ingest`, `social_data`, `chat`, `config`, `prompts`, models, tests, Docker, requirements, READMEs, `.env.example`, `plans/Initial_plan.md`.
 
 **Branch:** `remove-tiktok-scraper`
+
+---
+
+## 2026-03-31 — `fix/ci-frontend-working-directory`
+
+**Prompt (full text):** "The GitHub Actions test workflow is failing with: ENOENT: no such file or directory, open 'package.json'. This is because the workflow runs npm install from the repo root, but package.json lives inside the frontend/ subfolder. Find the failing workflow file inside .github/workflows/ — it may be named test.yml, ci.yml, or deploy.yml — and apply this fix: add a defaults block at the job level so all run steps automatically use frontend/ as their working directory under jobs.test. Keep checkout/setup steps unchanged. If the workflow has a build step, add it as `run: npm run build`. Do not add working-directory individually to each step. After editing the file commit and push."
+
+**Changes implemented:** Updated `.github/workflows/ci.yml` by adding `defaults.run.working-directory: ./frontend` under the `test` job so `npm install` and `npm test` run in the frontend package directory.
+
+**Branch:** `fix/ci-frontend-working-directory`
