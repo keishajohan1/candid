@@ -5,6 +5,8 @@ from fastapi import APIRouter
 
 from app.models.chat import ChatRequest, ChatResponse
 from app.services.claude_service import ClaudeService
+from app.services.knowledge_base import get_verified_facts_for_topic
+from app.services.safety.guardrails import GuardrailsService
 from app.services.safety.moderation import ModerationService
 from app.services.scrapers.reddit_service import RedditIngestionService
 from app.utils.prompts import (
@@ -63,17 +65,26 @@ async def chat(payload: ChatRequest) -> ChatResponse:
             logger.warning("Reddit ingestion in chat failed: %s", exc)
             ingest_errors.append({"source": "reddit", "code": "exception", "message": str(exc)})
 
+        if reddit_items:
+            try:
+                guardrails = GuardrailsService()
+                reddit_items[:5] = await guardrails.apply_excerpt_guardrails(reddit_items[:5])
+            except Exception as exc:
+                logger.warning("Guardrails service failed inline: %s", exc)
+
     prompt_items = source_items_for_prompt_from_ingestion(reddit_items)
     sources_out = lightweight_sources_for_response(prompt_items)
+    
+    facts = get_verified_facts_for_topic(payload.topic)
 
-    system_prompt = build_socratic_system_prompt(payload.topic)
-    user_content = build_socratic_user_content(
-        message=payload.message,
+    system_prompt = build_socratic_system_prompt(
         topic=payload.topic,
         turn_index=payload.turn_index,
         history=payload.history,
         source_items=prompt_items,
+        facts=facts,
     )
+    user_content = build_socratic_user_content(message=payload.message)
 
     claude_service = ClaudeService()
     result = await claude_service.generate_socratic_response(
