@@ -59,17 +59,17 @@ body {
 .sidebar-brand {
   font-family: "Courier New", Courier, monospace;
   font-weight: 700;
-  font-size: 17px;
+  font-size: 34px;
   color: #1e1509;
 }
 
 .brand-dot {
-  color: #093824;
+  color: #669bbc;
 }
 
 .sidebar-divider {
   border: none;
-  border-top: 1px solid rgba(9, 56, 36, 0.4);
+  border-top: 1px solid rgba(102, 155, 188, 0.4);
   width: 24px;
   margin: 0;
 }
@@ -252,4 +252,79 @@ body {
 
 .debug-sources a {
   color: #0284c7;
+}
+
+.new-chat-btn {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: #669bbc;
+  border: none;
+  border-radius: 6px;
+  color: #f2ede4;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  margin-bottom: 2rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.new-chat-btn:hover {
+  background-color: #588cad;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  transform: translateY(-1px);
+}
+
+.sidebar-section {
+  margin-bottom: 1.5rem;
+}
+
+.sidebar-section-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #b0a08a;
+  margin: 0 0 0.65rem 0;
+  font-weight: 600;
+}
+
+.sidebar-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebar-list li {
+  font-size: 0.8rem;
+  color: #555555;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.2s;
+}
+
+.sidebar-list li:hover {
+  color: #111827;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dev-mode-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #d1c9bd;
 }

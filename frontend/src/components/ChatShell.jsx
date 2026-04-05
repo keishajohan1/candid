@@ -2,9 +2,47 @@ import { useState, useRef, useEffect } from "react";
 import { sendChatMessage } from "../services/api";
 
 export default function ChatShell() {
-  const [topic, setTopic] = useState("");
+  const [sessions, setSessions] = useState([
+    { id: "1", title: "New conversation", messages: [], topic: "" }
+  ]);
+  const [activeSessionId, setActiveSessionId] = useState("1");
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState([]);
+  
+  const activeSession = sessions.find((s) => s.id === activeSessionId) || sessions[0];
+  const messages = activeSession.messages;
+  const topic = activeSession.topic;
+
+  const setTopic = (newTopic) => {
+    setSessions(prev =>
+      prev.map(s => s.id === activeSessionId ? { ...s, topic: typeof newTopic === 'function' ? newTopic(s.topic) : newTopic } : s)
+    );
+  };
+
+  const setMessages = (updater) => {
+    setSessions(prev =>
+      prev.map(s => {
+        if (s.id === activeSessionId) {
+          const newMessages = typeof updater === 'function' ? updater(s.messages) : updater;
+          let newTitle = s.title;
+          if (s.messages.length === 0 && newMessages.length > 0 && newMessages[0].role === "user") {
+             const text = newMessages[0].content;
+             newTitle = text.length > 28 ? text.slice(0, 28) + "..." : text;
+          }
+          return { ...s, messages: newMessages, title: newTitle };
+        }
+        return s;
+      })
+    );
+  };
+
+  const handleNewChat = () => {
+    const newId = Date.now().toString();
+    setSessions(prev => [{ id: newId, title: "New conversation", messages: [], topic: "" }, ...prev]);
+    setActiveSessionId(newId);
+    setInput("");
+    setError("");
+    setLastDebug(null);
+  };
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [fetchSources, setFetchSources] = useState(false);
@@ -74,32 +112,59 @@ export default function ChatShell() {
         </div>
         <hr className="sidebar-divider" />
         <p className="sidebar-tagline">A space to think through what matters.</p>
-        
-        {devMode && (
-          <>
-            <p className="sidebar-hint">Local test UI — Socratic debate mode</p>
-            <label className="sidebar-label">
-              Topic (optional)
-              <input
-                type="text"
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                placeholder="e.g. climate policy"
-              />
-            </label>
-            <label className="sidebar-check">
-              <input
-                type="checkbox"
-                checked={fetchSources}
-                onChange={(e) => setFetchSources(e.target.checked)}
-              />
-              Fetch Reddit excerpts for the prompt (may be slow)
-            </label>
-            <p className="sidebar-meta">Next turn_index: {turnIndex}</p>
-          </>
-        )}
 
-        <div style={{ marginTop: "auto", paddingTop: "1rem" }}>
+        <button className="new-chat-btn" onClick={handleNewChat}>
+          + New conversation
+        </button>
+
+        <div className="sidebar-section">
+          <h3 className="sidebar-section-label">Recent</h3>
+          <ul className="sidebar-list">
+            {sessions.map(s => (
+              <li 
+                key={s.id} 
+                onClick={() => setActiveSessionId(s.id)}
+                style={{ fontWeight: s.id === activeSessionId ? 600 : 400, color: s.id === activeSessionId ? '#111827' : '' }}
+              >
+                {s.title}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="sidebar-section">
+          <h3 className="sidebar-section-label">Sources</h3>
+          <ul className="sidebar-list">
+            <li>r/changemyview</li>
+            <li>r/politics</li>
+          </ul>
+        </div>
+
+        <div className="sidebar-footer">
+          {devMode && (
+            <div className="dev-mode-panel">
+              <p className="sidebar-hint">Local test UI — Socratic debate mode</p>
+              <label className="sidebar-label">
+                Topic (optional)
+                <input
+                  type="text"
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  placeholder="e.g. climate policy"
+                />
+              </label>
+              <label className="sidebar-check">
+                <input
+                  type="checkbox"
+                  checked={fetchSources}
+                  onChange={(e) => setFetchSources(e.target.checked)}
+                />
+                Fetch Reddit excerpts for the prompt (may be slow)
+              </label>
+              <p className="sidebar-meta">Next turn_index: {turnIndex}</p>
+            </div>
+          )}
+          
           <label className="sidebar-check" style={{ color: "#9c8c72" }}>
             <input
               type="checkbox"
