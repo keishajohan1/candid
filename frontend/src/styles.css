@@ -139,22 +139,10 @@ body {
 }
 
 .bubble {
-  max-width: 720px;
-  margin: 0 auto;
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-}
-
-.bubble-user {
-  background: #ece6db;
-  border: 1px solid #d1c9bd;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-}
-
-.bubble-assistant {
-  background: transparent;
-  border: 1px solid transparent;
+  max-width: calc(720px - 3em);
+  width: calc(100% - 3em);
+  display: flex;
+  flex-direction: column;
 }
 
 .bubble-role {
@@ -166,11 +154,64 @@ body {
   margin-bottom: 0.35rem;
 }
 
-.bubble-text {
+.bubble-user {
+  margin-left: auto;
+  margin-right: max(0px, calc((100% - 720px) / 2));
+  background: #e4ddd0;
+  border: 0.5px solid rgba(60,40,10,0.1);
+  border-radius: 7px 7px 2px 7px;
+  padding: 9px 12px;
+}
+
+.bubble-user .bubble-text,
+.bubble-assistant .bubble-text {
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 15px;
+  color: #2e2010;
+  line-height: 1.8;
   margin: 0;
-  color: #111827;
-  line-height: 1.5;
   white-space: pre-wrap;
+}
+
+.bubble-assistant {
+  margin-right: auto;
+  margin-left: max(0px, calc((100% - 720px) / 2));
+  background: #ece6db;
+  border: 0.5px solid rgba(60,40,10,0.09);
+  border-radius: 2px 7px 7px 7px;
+  padding: 10px 13px;
+}
+
+.bubble-assistant .bubble-text {
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 15px;
+  color: #2e2010;
+  line-height: 1.8;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.bubble-assistant .bubble-text em,
+.bubble-assistant .bubble-text i {
+  font-style: italic;
+  color: #669bbc;
+}
+
+.bubble-sources {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 0.5px solid rgba(60,40,10,0.08);
+  font-family: "EB Garamond", Georgia, serif;
+  font-style: italic;
+  font-size: 9.5px;
+  color: #b0a08a;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.bubble-source {
+  display: inline-block;
 }
 
 .loading-bubble {

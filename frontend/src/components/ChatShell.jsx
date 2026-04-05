@@ -52,6 +52,17 @@ export default function ChatShell() {
 
   const turnIndex = messages.filter((m) => m.role === "assistant").length + 1;
 
+  const renderMessageContent = (content) => {
+    if (!content) return null;
+    const parts = content.split(/(\*(?!\*)[^*]+\*|_(?!_)[^_]+_)/g);
+    return parts.map((part, i) => {
+      if ((part.startsWith('*') && part.endsWith('*')) || (part.startsWith('_') && part.endsWith('_'))) {
+        return <em key={i}>{part.slice(1, -1)}</em>;
+      }
+      return part;
+    });
+  };
+
   useEffect(() => {
     listEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
@@ -95,6 +106,7 @@ export default function ChatShell() {
           role: "assistant",
           content: data.response_text,
           id: `${Date.now()}-a`,
+          sources: data.sources ?? [],
         },
       ]);
     } catch (err) {
@@ -190,7 +202,16 @@ export default function ChatShell() {
               className={`bubble ${m.role === "user" ? "bubble-user" : "bubble-assistant"}`}
             >
               <span className="bubble-role">{m.role === "user" ? "You" : "Assistant"}</span>
-              <p className="bubble-text">{m.content}</p>
+              <p className="bubble-text">{renderMessageContent(m.content)}</p>
+              {m.role === "assistant" && m.sources && m.sources.length > 0 && (
+                <div className="bubble-sources">
+                  {m.sources.map((s, i) => (
+                    <span key={i} className="bubble-source">
+                      † {s.label || s.source}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
           {loading && (
