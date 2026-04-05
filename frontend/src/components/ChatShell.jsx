@@ -12,9 +12,22 @@ export default function ChatShell() {
   ];
 
   const [sessions, setSessions] = useState([
-    { id: "1", title: "New conversation", messages: [], topic: "" }
+    { id: "1", title: "...", messages: [], topic: "" }
   ]);
   const [activeSessionId, setActiveSessionId] = useState("1");
+  const [expandedRecent, setExpandedRecent] = useState(false);
+  const [expandedSources, setExpandedSources] = useState(false);
+
+  const staticSources = [
+    { label: "r/changemyview", href: "https://reddit.com/r/changemyview" },
+    { label: "r/politics", href: "https://reddit.com/r/politics" },
+    { label: "NASA GISS", href: "https://data.giss.nasa.gov/" },
+    { label: "Bureau of Economic Analysis", href: "https://www.bea.gov/" },
+    { label: "US Census Bureau", href: "https://www.census.gov/" },
+    { label: "Pew Research Center", href: "https://www.pewresearch.org/" },
+    { label: "CDC", href: "https://www.cdc.gov/" },
+    { label: "FCC", href: "https://www.fcc.gov/" },
+  ];
   const [input, setInput] = useState("");
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) || sessions[0];
@@ -49,8 +62,17 @@ export default function ChatShell() {
   };
 
   const handleNewChat = () => {
+    const emptySession = sessions.find(s => s.messages.length === 0);
+    if (emptySession) {
+      setActiveSessionId(emptySession.id);
+      setInput("");
+      setError("");
+      setLastDebug(null);
+      return;
+    }
+
     const newId = Date.now().toString();
-    setSessions(prev => [{ id: newId, title: "New conversation", messages: [], topic: "" }, ...prev]);
+    setSessions(prev => [{ id: newId, title: "...", messages: [], topic: "" }, ...prev]);
     setActiveSessionId(newId);
     setInput("");
     setError("");
@@ -144,16 +166,18 @@ export default function ChatShell() {
           candid<span className="brand-dot">.</span>
         </div>
         <hr className="sidebar-divider" />
-        <p className="sidebar-tagline">Information Without an Agenda</p>
+        <p className="sidebar-tagline">information without an agenda</p>
 
         <button className="new-chat-btn" onClick={handleNewChat}>
           + New conversation
         </button>
 
-        <div className="sidebar-section">
-          <h3 className="sidebar-section-label">Recent</h3>
+        <div className="sidebar-scrollable-wrapper">
+        <div className="sidebar-scrollable">
+          <div className="sidebar-section">
+            <h3 className="sidebar-section-label">Recent</h3>
           <ul className="sidebar-list">
-            {sessions.map(s => (
+            {(expandedRecent ? sessions : sessions.slice(0, 5)).map(s => (
               <li
                 key={s.id}
                 onClick={() => setActiveSessionId(s.id)}
@@ -163,20 +187,27 @@ export default function ChatShell() {
               </li>
             ))}
           </ul>
+          {sessions.length > 5 && (
+            <button className="expand-btn" onClick={() => setExpandedRecent(!expandedRecent)}>
+              {expandedRecent ? "Show less" : "Show more"}
+            </button>
+          )}
         </div>
 
         <div className="sidebar-section">
-          <h3 className="sidebar-section-label">Sources</h3>
+          <h3 className="sidebar-section-label">OUR SOURCES</h3>
           <ul className="sidebar-list">
-            <li><a href="https://reddit.com/r/changemyview" target="_blank" rel="noreferrer">r/changemyview</a></li>
-            <li><a href="https://reddit.com/r/politics" target="_blank" rel="noreferrer">r/politics</a></li>
-            <li><a href="https://data.giss.nasa.gov/" target="_blank" rel="noreferrer">NASA GISS</a></li>
-            <li><a href="https://www.bea.gov/" target="_blank" rel="noreferrer">Bureau of Economic Analysis</a></li>
-            <li><a href="https://www.census.gov/" target="_blank" rel="noreferrer">US Census Bureau</a></li>
-            <li><a href="https://www.pewresearch.org/" target="_blank" rel="noreferrer">Pew Research Center</a></li>
-            <li><a href="https://www.cdc.gov/" target="_blank" rel="noreferrer">CDC</a></li>
-            <li><a href="https://www.fcc.gov/" target="_blank" rel="noreferrer">FCC</a></li>
+            {(expandedSources ? staticSources : staticSources.slice(0, 5)).map((src, i) => (
+              <li key={i}><a href={src.href} target="_blank" rel="noreferrer">{src.label}</a></li>
+            ))}
           </ul>
+          {staticSources.length > 5 && (
+            <button className="expand-btn" onClick={() => setExpandedSources(!expandedSources)}>
+              {expandedSources ? "Show less" : "Show more"}
+            </button>
+          )}
+        </div>
+        </div>
         </div>
 
         <div className="sidebar-footer">
@@ -220,6 +251,7 @@ export default function ChatShell() {
       </aside>
 
       <div className="chat-main">
+        <div className="messages-scroll-wrapper">
         <div className="messages-scroll">
           {messages.length === 0 && (
             <div className="empty-state">
@@ -271,6 +303,7 @@ export default function ChatShell() {
             </div>
           )}
           <div ref={listEndRef} />
+        </div>
         </div>
 
         {error && <p className="error-banner">{error}</p>}

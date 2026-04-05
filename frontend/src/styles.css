@@ -57,6 +57,48 @@ body {
   gap: 0.75rem;
 }
 
+.sidebar-scrollable-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-height: 0;
+  margin: 0 -1rem;
+}
+
+.sidebar-scrollable-wrapper::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: linear-gradient(to bottom, rgba(60,40,10,0.06), transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.sidebar-scrollable-wrapper::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: linear-gradient(to top, rgba(60,40,10,0.06), transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.sidebar-scrollable {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 10px 1rem;
+}
+
 .sidebar-brand {
   font-family: "Courier New", Courier, monospace;
   font-weight: 700;
@@ -120,6 +162,26 @@ body {
   flex-direction: column;
   min-width: 0;
   background: #f2ede4;
+}
+
+.messages-scroll-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-height: 0;
+}
+
+.messages-scroll-wrapper::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 48px;
+  background: linear-gradient(to top, #f2ede4 5%, transparent);
+  pointer-events: none;
+  z-index: 10;
 }
 
 .messages-scroll {
@@ -425,6 +487,25 @@ body {
   color: inherit;
   text-decoration: none;
   display: block;
+}
+
+.expand-btn {
+  background: none;
+  border: none;
+  color: #9c8c72;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-style: italic;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 0.5rem;
+  text-align: left;
+  transition: color 0.2s;
+}
+
+.expand-btn:hover {
+  text-decoration: underline;
+  color: #111827;
 }
 
 .sidebar-footer {
