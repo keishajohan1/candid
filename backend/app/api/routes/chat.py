@@ -75,7 +75,18 @@ async def chat(payload: ChatRequest) -> ChatResponse:
     prompt_items = source_items_for_prompt_from_ingestion(reddit_items)
     sources_out = lightweight_sources_for_response(prompt_items)
     
-    facts = get_verified_facts_for_topic(payload.topic)
+    topic_search = payload.topic or payload.message
+    facts = get_verified_facts_for_topic(topic_search)
+    
+    import re
+    for fact in facts:
+        match = re.search(r'\(([^)]+)\)\.$', fact.strip())
+        if match:
+            sources_out.append({
+                "source": "knowledge_base",
+                "label": match.group(1),
+                "url": None
+            })
 
     system_prompt = build_socratic_system_prompt(
         topic=payload.topic,

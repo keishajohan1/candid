@@ -107,9 +107,22 @@ def get_verified_facts_for_topic(topic: str | None) -> list[str]:
     if normalized_topic in VERIFIED_FACTS_DB:
         return VERIFIED_FACTS_DB[normalized_topic]
         
-    # Check substring matches
+    # Keyword expansions
+    EXPANDED_KEYWORDS = {
+        "climate change": ["climate", "warming", "environment", "carbon", "co2", "weather"],
+        "criminal_justice": ["police", "prison", "crime", "criminal", "justice"],
+        "telecoms": ["broadband", "internet", "5g", "telecom", "fcc"],
+        "elections": ["election", "voting", "voter", "ballot", "democrat", "republican"]
+    }
+    
+    # Check substring matches and keywords
     for db_topic, facts in VERIFIED_FACTS_DB.items():
         if db_topic in normalized_topic or normalized_topic in db_topic:
             return facts
             
+        keywords = EXPANDED_KEYWORDS.get(db_topic) or db_topic.split()
+        for kw in keywords:
+            if len(kw) >= 3 and kw in normalized_topic:
+                return facts
+                
     return []
