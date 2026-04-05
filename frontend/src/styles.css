@@ -1,7 +1,7 @@
 :root {
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   color: #111827;
-  background: #202123;
+  background: #f2ede4;
 }
 
 * {
@@ -16,14 +16,14 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #343541;
+  background: #f2ede4;
 }
 
 .app-topbar {
   padding: 0.75rem 1rem;
-  background: #202123;
-  color: #ececf1;
-  border-bottom: 1px solid #4d4d4f;
+  background: #ece6db;
+  color: #111827;
+  border-bottom: 1px solid #d1c9bd;
 }
 
 .app-topbar h1 {
@@ -35,7 +35,7 @@ body {
 .app-topbar p {
   margin: 0.25rem 0 0;
   font-size: 0.75rem;
-  color: #c5c5d2;
+  color: #555;
 }
 
 .chatgpt-layout {
@@ -47,24 +47,45 @@ body {
 .chat-sidebar {
   width: 240px;
   flex-shrink: 0;
-  background: #202123;
-  color: #ececf1;
+  background: #ece6db;
+  color: #111827;
   padding: 1rem;
-  border-right: 1px solid #4d4d4f;
+  border-right: 1px solid #d1c9bd;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
 
 .sidebar-brand {
+  font-family: "Courier New", Courier, monospace;
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 17px;
+  color: #1e1509;
+}
+
+.brand-dot {
+  color: #093824;
+}
+
+.sidebar-divider {
+  border: none;
+  border-top: 1px solid rgba(9, 56, 36, 0.4);
+  width: 24px;
+  margin: 0;
+}
+
+.sidebar-tagline {
+  font-family: "EB Garamond", Georgia, serif;
+  font-style: italic;
+  font-size: 11px;
+  color: #9c8c72;
+  margin: 0;
 }
 
 .sidebar-hint,
 .sidebar-meta {
   font-size: 0.75rem;
-  color: #8e8ea0;
+  color: #666;
   margin: 0;
 }
 
@@ -78,9 +99,9 @@ body {
 .sidebar-label input {
   padding: 0.4rem 0.5rem;
   border-radius: 6px;
-  border: 1px solid #565869;
-  background: #40414f;
-  color: #ececf1;
+  border: 1px solid #d1c9bd;
+  background: #f2ede4;
+  color: #111827;
 }
 
 .sidebar-check {
@@ -88,7 +109,7 @@ body {
   align-items: flex-start;
   gap: 0.5rem;
   font-size: 0.75rem;
-  color: #c5c5d2;
+  color: #444;
   cursor: pointer;
 }
 
@@ -97,7 +118,7 @@ body {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background: #343541;
+  background: #f2ede4;
 }
 
 .messages-scroll {
@@ -110,7 +131,7 @@ body {
 }
 
 .empty-hint {
-  color: #8e8ea0;
+  color: #666;
   font-size: 0.85rem;
   max-width: 560px;
   margin: 2rem auto;
@@ -126,13 +147,14 @@ body {
 }
 
 .bubble-user {
-  background: #343541;
-  border: 1px solid #565869;
+  background: #ece6db;
+  border: 1px solid #d1c9bd;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 .bubble-assistant {
-  background: #444654;
-  border: 1px solid #565869;
+  background: transparent;
+  border: 1px solid transparent;
 }
 
 .bubble-role {
@@ -140,13 +162,13 @@ body {
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #8e8ea0;
+  color: #666;
   margin-bottom: 0.35rem;
 }
 
 .bubble-text {
   margin: 0;
-  color: #ececf1;
+  color: #111827;
   line-height: 1.5;
   white-space: pre-wrap;
 }
@@ -158,8 +180,8 @@ body {
 .error-banner {
   margin: 0 1rem;
   padding: 0.5rem 0.75rem;
-  background: #5c2b2b;
-  color: #fecaca;
+  background: #fecaca;
+  color: #7f1d1d;
   border-radius: 6px;
   font-size: 0.85rem;
 }
@@ -168,8 +190,8 @@ body {
   display: flex;
   gap: 0.5rem;
   padding: 0.75rem 1rem 1rem;
-  border-top: 1px solid #4d4d4f;
-  background: #343541;
+  border-top: 1px solid #d1c9bd;
+  background: #f2ede4;
   align-items: flex-end;
 }
 
@@ -178,18 +200,23 @@ body {
   resize: none;
   padding: 0.65rem 0.75rem;
   border-radius: 8px;
-  border: 1px solid #565869;
-  background: #40414f;
-  color: #ececf1;
+  border: 1px solid #d1c9bd;
+  background: #ece6db;
+  color: #111827;
   font: inherit;
+}
+
+.composer textarea:focus {
+  outline: none;
+  border-color: #a8a29a;
 }
 
 .composer button {
   padding: 0.65rem 1.1rem;
   border: none;
   border-radius: 8px;
-  background: #19c37d;
-  color: #0d0d0d;
+  background: #111827;
+  color: #f2ede4;
   font-weight: 600;
   cursor: pointer;
 }
@@ -202,10 +229,10 @@ body {
 .debug-panel {
   margin: 0 1rem 1rem;
   padding: 0.75rem;
-  background: #202123;
-  border: 1px solid #4d4d4f;
+  background: #ece6db;
+  border: 1px solid #d1c9bd;
   border-radius: 8px;
-  color: #c5c5d2;
+  color: #555;
   font-size: 0.75rem;
 }
 
@@ -216,7 +243,7 @@ body {
 
 .debug-errors {
   margin-top: 0.5rem;
-  color: #fca5a5;
+  color: #dc2626;
 }
 
 .debug-sources {
@@ -224,5 +251,5 @@ body {
 }
 
 .debug-sources a {
-  color: #7dd3fc;
+  color: #0284c7;
 }
