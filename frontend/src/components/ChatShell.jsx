@@ -1,16 +1,29 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { sendChatMessage } from "../services/api";
 
 export default function ChatShell() {
+  const placeholders = [
+    "What are you trying to understand...",
+    "What's something you've been trying to make sense of...",
+    "Something you've heard but never fully understood...",
+    "What's the version of this story you haven't heard...",
+    "What's the part of this you can't quite explain...",
+    "Ask the question behind the question..."
+  ];
+
   const [sessions, setSessions] = useState([
     { id: "1", title: "New conversation", messages: [], topic: "" }
   ]);
   const [activeSessionId, setActiveSessionId] = useState("1");
   const [input, setInput] = useState("");
-  
+
   const activeSession = sessions.find((s) => s.id === activeSessionId) || sessions[0];
   const messages = activeSession.messages;
   const topic = activeSession.topic;
+
+  const currentPlaceholder = useMemo(() => {
+    return placeholders[Math.floor(Math.random() * placeholders.length)];
+  }, [activeSessionId]);
 
   const setTopic = (newTopic) => {
     setSessions(prev =>
@@ -25,8 +38,8 @@ export default function ChatShell() {
           const newMessages = typeof updater === 'function' ? updater(s.messages) : updater;
           let newTitle = s.title;
           if (s.messages.length === 0 && newMessages.length > 0 && newMessages[0].role === "user") {
-             const text = newMessages[0].content;
-             newTitle = text.length > 28 ? text.slice(0, 28) + "..." : text;
+            const text = newMessages[0].content;
+            newTitle = text.length > 28 ? text.slice(0, 28) + "..." : text;
           }
           return { ...s, messages: newMessages, title: newTitle };
         }
@@ -49,6 +62,14 @@ export default function ChatShell() {
   const [devMode, setDevMode] = useState(false);
   const [lastDebug, setLastDebug] = useState(null);
   const listEndRef = useRef(null);
+  const textareaRef = useRef(null);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [input]);
 
   const turnIndex = messages.filter((m) => m.role === "assistant").length + 1;
 
@@ -123,7 +144,7 @@ export default function ChatShell() {
           candid<span className="brand-dot">.</span>
         </div>
         <hr className="sidebar-divider" />
-        <p className="sidebar-tagline">A space to think through what matters.</p>
+        <p className="sidebar-tagline">Information Without an Agenda</p>
 
         <button className="new-chat-btn" onClick={handleNewChat}>
           + New conversation
@@ -133,8 +154,8 @@ export default function ChatShell() {
           <h3 className="sidebar-section-label">Recent</h3>
           <ul className="sidebar-list">
             {sessions.map(s => (
-              <li 
-                key={s.id} 
+              <li
+                key={s.id}
                 onClick={() => setActiveSessionId(s.id)}
                 style={{ fontWeight: s.id === activeSessionId ? 600 : 400, color: s.id === activeSessionId ? '#111827' : '' }}
               >
@@ -147,8 +168,14 @@ export default function ChatShell() {
         <div className="sidebar-section">
           <h3 className="sidebar-section-label">Sources</h3>
           <ul className="sidebar-list">
-            <li>r/changemyview</li>
-            <li>r/politics</li>
+            <li><a href="https://reddit.com/r/changemyview" target="_blank" rel="noreferrer">r/changemyview</a></li>
+            <li><a href="https://reddit.com/r/politics" target="_blank" rel="noreferrer">r/politics</a></li>
+            <li><a href="https://data.giss.nasa.gov/" target="_blank" rel="noreferrer">NASA GISS</a></li>
+            <li><a href="https://www.bea.gov/" target="_blank" rel="noreferrer">Bureau of Economic Analysis</a></li>
+            <li><a href="https://www.census.gov/" target="_blank" rel="noreferrer">US Census Bureau</a></li>
+            <li><a href="https://www.pewresearch.org/" target="_blank" rel="noreferrer">Pew Research Center</a></li>
+            <li><a href="https://www.cdc.gov/" target="_blank" rel="noreferrer">CDC</a></li>
+            <li><a href="https://www.fcc.gov/" target="_blank" rel="noreferrer">FCC</a></li>
           </ul>
         </div>
 
@@ -176,7 +203,7 @@ export default function ChatShell() {
               <p className="sidebar-meta">Next turn_index: {turnIndex}</p>
             </div>
           )}
-          
+
           <label className="sidebar-check" style={{ color: "#9c8c72" }}>
             <input
               type="checkbox"
@@ -185,16 +212,39 @@ export default function ChatShell() {
             />
             Developer Mode
           </label>
+
+          <div className="sidebar-legal-footer">
+            No position is taken or endorsed. All responses draw from verified sources and filtered public discourse.
+          </div>
         </div>
       </aside>
 
       <div className="chat-main">
         <div className="messages-scroll">
           {messages.length === 0 && (
-            <p className="empty-hint">
-              Send a message to test the assistant. Enable source fetch to pipe
-              backend-ingested snippets into the prompt (no scraping by Claude).
-            </p>
+            <div className="empty-state">
+              <h2 className="empty-heading">What are you trying to understand?</h2>
+              <div className="empty-chips">
+                {[
+                  "Explain the arguments for and against open-source AI models.",
+                  "What's the nuance missing from modern climate policy debates?",
+                  "Break down the socio-economic impacts of urban zoning laws."
+                ].map((chip, idx) => (
+                  <button
+                    key={idx}
+                    className="empty-chip"
+                    onClick={() => {
+                      setInput(chip);
+                      if (textareaRef.current) {
+                        textareaRef.current.focus();
+                      }
+                    }}
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
           {messages.map((m) => (
             <div
@@ -227,16 +277,33 @@ export default function ChatShell() {
 
         <form className="composer" onSubmit={handleSubmit}>
           <textarea
+            ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            rows={3}
-            placeholder="Your message…"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit(e);
+              }
+            }}
+            rows={2}
+            placeholder={currentPlaceholder}
             disabled={loading}
           />
-          <button type="submit" disabled={loading || !input.trim()}>
-            {loading ? "Sending…" : "Send"}
+          <button type="submit" disabled={loading || !input.trim()} title="Send message">
+            {loading ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.5 }}>
+                <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
           </button>
         </form>
+
+        <p className="composer-hint">Use Shift + Enter for a new line</p>
 
         {devMode && lastDebug && (
           <div className="debug-panel">
