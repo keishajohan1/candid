@@ -1,6 +1,22 @@
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1";
 
+export async function generateChatTitle(message) {
+  const response = await fetch(`${API_BASE_URL}/chat/title`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ message }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Title generation failed: ${response.status}`);
+  }
+
+  return response.json();
+}
+
 export async function sendChatMessage(payload) {
   const response = await fetch(`${API_BASE_URL}/chat`, {
     method: "POST",

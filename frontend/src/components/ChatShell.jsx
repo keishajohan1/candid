@@ -1,6 +1,21 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { sendChatMessage } from "../services/api";
 
+function generateLocalTitle(text) {
+  let cleaned = text.replace(/^(can you explain|can you|what is|what's|what are|how do|how to|why is|why are|please tell me about|tell me about|explain|describe)\b/gi, '').trim();
+  cleaned = cleaned.replace(/[?.!;,]+$/g, '').trim();
+  const words = cleaned.split(/\s+/).filter(w => w.length > 0);
+  const titleWords = words.slice(0, 4);
+  let title = titleWords.join(" ");
+  if (words.length > 4) {
+    title += "...";
+  }
+  if (title.length > 0) {
+    title = title.charAt(0).toUpperCase() + title.slice(1);
+  }
+  return title || "New conversation";
+}
+
 export default function ChatShell() {
   const placeholders = [
     "What are you trying to understand...",
@@ -17,6 +32,28 @@ export default function ChatShell() {
   const [activeSessionId, setActiveSessionId] = useState("1");
   const [expandedRecent, setExpandedRecent] = useState(false);
   const [expandedSources, setExpandedSources] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState(null);
+
+  const confirmDelete = () => {
+    if (!sessionToDelete) return;
+    
+    let nextActiveId = activeSessionId;
+
+    setSessions(prev => {
+      const filtered = prev.filter(s => s.id !== sessionToDelete.id);
+      if (filtered.length === 0) {
+        const newId = Date.now().toString();
+        setActiveSessionId(newId);
+        return [{ id: newId, title: "...", messages: [], topic: "" }];
+      }
+      if (nextActiveId === sessionToDelete.id) {
+        setActiveSessionId(filtered[0].id);
+      }
+      return filtered;
+    });
+    
+    setSessionToDelete(null);
+  };
 
   const staticSources = [
     { label: "r/changemyview", href: "https://reddit.com/r/changemyview" },
@@ -49,12 +86,7 @@ export default function ChatShell() {
       prev.map(s => {
         if (s.id === activeSessionId) {
           const newMessages = typeof updater === 'function' ? updater(s.messages) : updater;
-          let newTitle = s.title;
-          if (s.messages.length === 0 && newMessages.length > 0 && newMessages[0].role === "user") {
-            const text = newMessages[0].content;
-            newTitle = text.length > 28 ? text.slice(0, 28) + "..." : text;
-          }
-          return { ...s, messages: newMessages, title: newTitle };
+          return { ...s, messages: newMessages };
         }
         return s;
       })
@@ -78,7 +110,8 @@ export default function ChatShell() {
     setError("");
     setLastDebug(null);
   };
-  const [loading, setLoading] = useState(false);
+  const [loadingState, setLoadingState] = useState(null);
+  const loading = loadingState !== null;
   const [error, setError] = useState("");
   const [fetchSources, setFetchSources] = useState(false);
   const [devMode, setDevMode] = useState(false);
@@ -119,12 +152,16 @@ export default function ChatShell() {
       .filter((m) => m.role === "user")
       .map((m) => m.content);
 
-    setLoading(true);
+    setLoadingState("reading");
     setError("");
     setInput("");
 
     const userMsg = { role: "user", content: text, id: `${Date.now()}-u` };
     setMessages((prev) => [...prev, userMsg]);
+
+    const readTimer = setTimeout(() => {
+      setLoadingState("thinking");
+    }, fetchSources ? 2500 : 800);
 
     try {
       const data = await sendChatMessage({
@@ -152,15 +189,38 @@ export default function ChatShell() {
           sources: data.sources ?? [],
         },
       ]);
+
+      if (messages.length === 0) {
+        const localTitle = generateLocalTitle(text);
+        setSessions(prev => 
+          prev.map(s => s.id === activeSessionId ? { ...s, title: localTitle } : s)
+        );
+      }
     } catch (err) {
       setError(err.message || "Request failed.");
     } finally {
-      setLoading(false);
+      clearTimeout(readTimer);
+      setLoadingState(null);
     }
   }
 
   return (
     <div className="chatgpt-layout">
+      {sessionToDelete && (
+        <div className="modal-overlay" onClick={() => setSessionToDelete(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <h3 className="modal-title">Delete chat?</h3>
+            <p className="modal-text">
+              Are you sure you want to permanently delete "{sessionToDelete.title === "..." ? "New conversation" : sessionToDelete.title}"?
+            </p>
+            <div className="modal-actions">
+              <button className="modal-btn-cancel" onClick={() => setSessionToDelete(null)}>Cancel</button>
+              <button className="modal-btn-delete" onClick={confirmDelete}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <aside className="chat-sidebar">
         <div className="sidebar-brand">
           candid<span className="brand-dot">.</span>
@@ -183,7 +243,29 @@ export default function ChatShell() {
                 onClick={() => setActiveSessionId(s.id)}
                 style={{ fontWeight: s.id === activeSessionId ? 600 : 400, color: s.id === activeSessionId ? '#111827' : '' }}
               >
-                {s.title}
+                <div className="sidebar-list-item-content">
+                  {s.title === "..." && s.id === activeSessionId && loadingState ? (
+                    <span className="recent-placeholder">{loadingState === "reading" ? "Reading" : "Thinking"}
+                      <span className="loading-dots">
+                        <span>.</span><span>.</span><span>.</span>
+                      </span>
+                    </span>
+                  ) : s.title === "..." ? (
+                    <span className="recent-placeholder">...</span>
+                  ) : (
+                    s.title
+                  )}
+                </div>
+                <button
+                  className="delete-session-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSessionToDelete(s);
+                  }}
+                  title="Delete conversation"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
               </li>
             ))}
           </ul>
@@ -283,7 +365,9 @@ export default function ChatShell() {
               key={m.id}
               className={`bubble ${m.role === "user" ? "bubble-user" : "bubble-assistant"}`}
             >
-              <span className="bubble-role">{m.role === "user" ? "You" : "Assistant"}</span>
+              <span className="bubble-role">
+                {m.role === "user" ? "You" : <span className="bubble-brand">candid<span className="brand-dot">.</span></span>}
+              </span>
               <p className="bubble-text">{renderMessageContent(m.content)}</p>
               {m.role === "assistant" && m.sources && m.sources.length > 0 && (
                 <div className="bubble-sources">
@@ -298,8 +382,13 @@ export default function ChatShell() {
           ))}
           {loading && (
             <div className="bubble bubble-assistant loading-bubble">
-              <span className="bubble-role">Assistant</span>
-              <p className="bubble-text">Thinking…</p>
+              <span className="bubble-role"><span className="bubble-brand">candid<span className="brand-dot">.</span></span></span>
+              <p className="bubble-text">
+                {loadingState === "reading" ? "Reading" : "Thinking"}
+                <span className="loading-dots">
+                  <span>.</span><span>.</span><span>.</span>
+                </span>
+              </p>
             </div>
           )}
           <div ref={listEndRef} />
