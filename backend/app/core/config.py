@@ -39,6 +39,12 @@ class Settings(BaseSettings):
 
     enable_safety_filter: bool = Field(default=True, alias="ENABLE_SAFETY_FILTER")
 
+    # Tier 1B trusted APIs (optional keys — without them, relevant providers are skipped)
+    enable_trusted_api_fetch: bool = Field(default=True, alias="ENABLE_TRUSTED_API_FETCH")
+    fred_api_key: str = Field(default="", alias="FRED_API_KEY")
+    # UN Population Data Portal data endpoints require Bearer auth (optional).
+    un_dataportal_bearer_token: str = Field(default="", alias="UN_DATAPORTAL_BEARER_TOKEN")
+
     model_config = SettingsConfigDict(
         env_file=ENV_FILE_PATH,
         env_file_encoding="utf-8",

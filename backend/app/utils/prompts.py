@@ -35,7 +35,11 @@ The user does the arriving. You build the road.
 
 Inquiry focus (may be general if not specified): {topic_line}
 
-{verified_facts}
+{rag_data_contract}
+
+{tier1a_static_facts}
+
+{tier1b_trusted_api_facts}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SECTION 1 — THE CORE INTERACTION MODEL
@@ -386,7 +390,9 @@ RULE 7 — DISTRESS EXIT
   Do not resume pressure until the user re-engages.
 
 RULE 8 — NO FABRICATION
-  Work only from {social_media_excerpts} supplied by the backend.
+  Use only the backend-supplied tiers: TIER 1A (static facts above), TIER 1B (trusted API lines above, when present),
+  and TIER 2 social material in {social_media_excerpts}.
+  Treat TIER 1B lines exactly as written—including CROSS-VERIFIED vs PROVISIONAL labels. Do not upgrade PROVISIONAL to "certain."
   Do not claim to browse or scrape external sources.
 
 RULE 9 — CONVERSATIONAL AUTHENTICITY & INVISIBLE ARCHITECTURE
@@ -406,8 +412,24 @@ SECTION 7 — INPUT VARIABLE REFERENCE
 {topic_line}             → Inquiry subject, or "general" if open
 {turn_index}             → Integer. Current exchange in thread.
 {prior_user_lines}       → All prior user messages this session.
-{social_media_excerpts}  → Backend-supplied source material, or empty.
+{tier1a_static_facts}    → Curated static facts (Tier 1A), or empty.
+{tier1b_trusted_api_facts} → Live API facts (Tier 1B), only when 1A empty; may be cross-verified or provisional.
+{social_media_excerpts}  → Backend-supplied Tier 2 social material, or empty.
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"""
+
+RAG_DATA_CONTRACT = """
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RAG DATA CONTRACT (backend-enforced)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+· TIER 1A — Static verified facts: curated knowledge base strings (when any match the topic).
+· TIER 1B — Trusted API facts: World Bank (open), FRED (optional key), UN Data Portal (optional bearer token).
+  The backend calls Tier 1B only when Tier 1A matched nothing for this session, to avoid duplicate or conflicting figures.
+  Lines may read CROSS-VERIFIED (two providers agree within tolerance), PROVISIONAL (single provider or same-publisher add-on),
+  or explicit disagreement text—preserve that nuance in how you speak about certainty.
+· TIER 2 — Social excerpts below (e.g. Reddit): public discourse and opinion only; never factual proof.
+· Do not invent statistics, URLs, or study results. If a tier is empty, acknowledge uncertainty rather than filling gaps.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
 
@@ -528,6 +550,7 @@ def build_socratic_system_prompt(
     history: list[str],
     source_items: list[dict[str, Any]],
     facts: list[str],
+    trusted_api_fact_lines: list[str] | None = None,
 ) -> str:
     history = [h.strip() for h in history if h and h.strip()][-8:]
     history_block = (
@@ -537,18 +560,36 @@ def build_socratic_system_prompt(
         else "No prior user messages recorded for this thread."
     )
     excerpts_block = format_source_block_for_prompt(source_items)
-    facts_block = (
-        "VERIFIED FACT LAYER (Use to anchor your logical probes):\n"
+    tier1a = (
+        "TIER 1A — STATIC VERIFIED FACTS (curated knowledge base):\n"
         + "\n".join(f"· {f}" for f in facts)
-        if facts else ""
+        if facts
+        else "TIER 1A — STATIC VERIFIED FACTS: (none matched for this session's topic.)"
     )
+    t1b_lines = trusted_api_fact_lines or []
+    if t1b_lines:
+        tier1b = "TIER 1B — TRUSTED API FACTS (live; cross-verified or labeled provisional):\n" + "\n".join(
+            f"· {line}" for line in t1b_lines
+        )
+    elif facts:
+        tier1b = (
+            "TIER 1B — TRUSTED API FACTS: (not fetched — Tier 1A static knowledge base "
+            "already matched this topic; live APIs are skipped to avoid conflicting figures.)"
+        )
+    else:
+        tier1b = (
+            "TIER 1B — TRUSTED API FACTS: (none produced this turn — no matching trusted "
+            "API profile, missing optional keys, or providers returned no usable series.)"
+        )
 
     return GUIDED_INQUIRY_SYSTEM_PROMPT_TEMPLATE.format(
         topic_line=_topic_line(topic),
         turn_index=turn_index,
         prior_user_lines=history_block,
         social_media_excerpts=excerpts_block,
-        verified_facts=facts_block,
+        rag_data_contract=RAG_DATA_CONTRACT,
+        tier1a_static_facts=tier1a,
+        tier1b_trusted_api_facts=tier1b,
         reddit_handling_rules=REDDIT_SOURCE_HANDLING_RULES,
     )
 

@@ -16,6 +16,9 @@ The backend provides Candid API modules: **Socratic debate chat** (Claude consum
 | **`ANTHROPIC_API_KEY`** | **Required** | Non-empty value in **`backend/.env`**. The app **fails startup** (Pydantic validation + lifespan) if missing. Chat always calls Anthropic; there is no mock LLM path. |
 | **`CLAUDE_MAX_OUTPUT_TOKENS`** | Long replies | Default **8192** (range 256–64000). Increase when users send very long prompts and need longer assistant output; respect Anthropic model limits. |
 | **`REDDIT_*`** | Reddit ingestion | **No API key** in current code — uses public JSON endpoints. Set **`REDDIT_USER_AGENT`** to something identifiable; optional **`REDDIT_TIMEOUT_SECONDS`**. |
+| **`FRED_API_KEY`** | Tier 1B trusted facts | **Optional.** When set, economy-style sessions with **no static KB match** can **cross-verify** World Bank vs FRED (inflation, unemployment). |
+| **`UN_DATAPORTAL_BEARER_TOKEN`** | Tier 1B population | **Optional.** UN Population Data Portal **`/data/*`** requires **Bearer** auth; without it, population corroboration falls back to **World Bank only** (provisional line). |
+| **`ENABLE_TRUSTED_API_FETCH`** | Tier 1B | Default **true**. Set **false** to disable all Tier 1B HTTP fetches. |
 | **`.env` file** | Local settings | Copy **`.env.example`** → **`backend/.env`** and set **`ANTHROPIC_API_KEY`**. Resolved by path from `app/core/config.py` (see note below). |
 
 ### `.env` loading note
@@ -30,7 +33,15 @@ The backend provides Candid API modules: **Socratic debate chat** (Claude consum
 
 ## Chat behavior (rules location)
 
-Socratic rules and prompt assembly live in **`app/utils/prompts.py`**. The chat route builds a **system** prompt + **user** message; optional **`fetch_sources: true`** runs Reddit ingestion and attaches excerpts to the user message only.
+Socratic rules and prompt assembly live in **`app/utils/prompts.py`**. The chat route builds a **system** prompt + **user** message.
+
+**Tiered context**
+
+- **Tier 1A:** `knowledge_base.get_verified_facts_for_topic(topic or message)` when the topic matches a curated bucket.
+- **Tier 1B:** `TrustedFactsOrchestrator` calls **World Bank** (always, no key), **FRED** (if `FRED_API_KEY`), **UN Data Portal** (if `UN_DATAPORTAL_BEARER_TOKEN`) **only when Tier 1A returned no facts**, to avoid conflicting numbers. Economy metrics prefer **cross-verified** lines (WB+FRED). Climate uses **two distinct World Bank series** with explicit same-publisher labeling. Population uses **WB+UN** when UN auth is available.
+- **Tier 2:** Optional **`fetch_sources: true`** → Reddit → **BM25 rerank** (`rerank_bm25.py`) → guardrails on top excerpts → excerpt block in the system prompt (`social_media_excerpts`).
+
+`debug` on chat responses includes **`trusted_api`**, **`static_kb_matched`**, **`trusted_api_lines_count`**.
 
 ## Ingestion viability (audit)
 
@@ -40,7 +51,7 @@ Socratic rules and prompt assembly live in **`app/utils/prompts.py`**. The chat 
 
 From `backend/`:
 
-- `pytest -q`
+- `pytest` (uses **`pytest.ini`**: coverage + **80%** gate with **`.coveragerc`** — omits stub `chroma_client`, integration-heavy `reddit_service`, and token-gated `un_client` from coverage totals)
 
 ## Limitations / not production-ready
 

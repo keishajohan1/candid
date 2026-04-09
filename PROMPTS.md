@@ -91,3 +91,13 @@ Entries record prompts used for substantial AI-assisted changes (no secrets).
 **Changes implemented:** Replaced the `Run tests` step (`npm test`) with a `Build` step (`npm run build`) in `.github/workflows/ci.yml` to match the frontend scripts.
 
 **Branch:** `avalder`
+
+---
+
+## 2026-04-09 — `feature/tiered-trusted-rag-rerank`
+
+**Prompt (summary):** Implement tiered RAG: clear contract in prompts; Tier 1B trusted APIs (World Bank, UN, FRED) only when static KB empty; cross-verification (no single-source-as-truth); BM25 rerank for Reddit by tier assembly; no SerpAPI; preserve Candid personality.
+
+**Changes implemented:** Added `trusted_data/` (WB + FRED + optional UN bearer clients, `cross_verify`, `TrustedFactsOrchestrator`), `rerank_bm25` for Reddit, `has_static_kb_for_topic`, extended `build_socratic_system_prompt` + RAG contract / RULE 8, wired `chat.py` with debug fields, `rank-bm25` dependency, tests, `backend/.coveragerc` + `pytest.ini`, README and `.env.example` updates.
+
+**Branch:** `feature/tiered-trusted-rag-rerank`

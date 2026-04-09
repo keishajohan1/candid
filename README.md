@@ -3,9 +3,16 @@
 Candid is a production-minded MVP scaffold for a neutral educational chatbot platform.
 The project is designed to guide users through facts, sources, and multiple perspectives, with a roadmap for safety, retrieval, and source exploration.
 
+## Technology stack
+
+- **Backend:** Python 3.11+, FastAPI, Uvicorn, Anthropic SDK, httpx, Pydantic, rank-bm25 (BM25 rerank), pytest / pytest-cov.
+- **Frontend:** React, Vite.
+- **Trusted data APIs (Tier 1B):** World Bank Indicators API v2 (no key), FRED (optional API key), UN Population Data Portal `data` routes (optional Bearer token).
+
 ## Repository layout
 
 - `backend/` FastAPI API server, service modules, tests, and backend container image.
+- `backend/app/services/trusted_data/` Tier 1B trusted API orchestration (World Bank, optional FRED, optional UN bearer).
 - `frontend/` React + Vite web client scaffold.
 - `docs/` future architecture, product, and operations docs.
 
@@ -20,6 +27,7 @@ The project is designed to guide users through facts, sources, and multiple pers
 
 - `GET /health` returns service status and runtime metadata.
 - `POST /api/v1/chat` calls Anthropic when `ANTHROPIC_API_KEY` is set in `backend/.env` (required for the app to start).
+- Chat uses a **tiered RAG contract** in the system prompt: **Tier 1A** static facts (`knowledge_base.py`) when the topic matches; **Tier 1B** live **World Bank** + optional **FRED** / **UN Data Portal** facts only when Tier 1A is empty, with **cross-verification** where two independent providers apply; **Tier 2** Reddit excerpts when `fetch_sources` is true, **BM25-reranked** before guardrails.
 
 ## Local development (no virtual environment workflow)
 
@@ -71,10 +79,23 @@ Recommended deployment pattern:
 
 Use `docker-compose.yml` for convenience local orchestration of both services.
 
+## Tests (backend)
+
+From `backend/` run `pytest` (see `backend/pytest.ini` and `backend/.coveragerc` for coverage + 80% threshold).
+
+## Implementation status (high level)
+
+- **Done:** Health, chat (Claude), Reddit ingest + social-data, moderation precheck, excerpt guardrails, static KB, Tier 1B trusted APIs (WB + optional FRED/UN), cross-verified fact lines, BM25 Reddit rerank, tiered prompt contract.
+- **Pending / stub:** Chroma vector RAG (`chroma_client.py`), durable sessions, auth, full safety policy beyond keyword precheck.
+
 ## Roadmap placeholders intentionally stubbed
 
 - Advanced Claude prompt orchestration and multi-turn memory
 - Full safety policy layer and bias/risk scoring
-- Reddit ingestion/retrieval enhancements
+- Reddit ingestion/retrieval enhancements (beyond BM25 rerank)
 - ChromaDB retrieval ranking and citation rendering
 - Auth, durable conversation persistence, and analytics dashboards
+
+## Team member roles
+
+- (Update per your course team roster.)

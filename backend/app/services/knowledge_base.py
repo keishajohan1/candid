@@ -96,6 +96,11 @@ VERIFIED_FACTS_DB = {
 ]
 }
 
+def has_static_kb_for_topic(topic: str | None) -> bool:
+    """True when the static Tier 1A knowledge base returns at least one fact."""
+    return bool(get_verified_facts_for_topic(topic))
+
+
 def get_verified_facts_for_topic(topic: str | None) -> list[str]:
     """Retrieve 2-3 verified Tier 1 facts for a given topic."""
     if not topic:
