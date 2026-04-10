@@ -4,6 +4,7 @@ anthropic
 pydantic
 pydantic-settings
 httpx
+rank-bm25
 python-dotenv
 chromadb
 pytest

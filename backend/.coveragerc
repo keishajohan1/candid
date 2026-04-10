@@ -1,0 +1,11 @@
+[run]
+source = app
+omit =
+    app/services/rag/chroma_client.py
+    app/services/scrapers/reddit_service.py
+    app/services/trusted_data/un_client.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    if TYPE_CHECKING:

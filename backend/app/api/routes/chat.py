@@ -5,10 +5,12 @@ from fastapi import APIRouter
 
 from app.models.chat import ChatRequest, ChatResponse
 from app.services.claude_service import ClaudeService
-from app.services.knowledge_base import get_verified_facts_for_topic
+from app.services.ingestion.rerank_bm25 import rerank_source_contents_by_query
+from app.services.knowledge_base import get_verified_facts_for_topic, has_static_kb_for_topic
 from app.services.safety.guardrails import GuardrailsService
 from app.services.safety.moderation import ModerationService
 from app.services.scrapers.reddit_service import RedditIngestionService
+from app.services.trusted_data import TrustedFactsOrchestrator
 from app.utils.prompts import (
     build_socratic_system_prompt,
     build_socratic_user_content,
@@ -43,6 +45,8 @@ async def chat(payload: ChatRequest) -> ChatResponse:
 
     reddit_items: list[Any] = []
     ingest_errors: list[dict[str, Any]] = []
+    trusted_api_lines: list[str] = []
+    trusted_debug: dict[str, Any] = {}
 
     if payload.fetch_sources:
         q = (payload.source_query or payload.topic or payload.message[:120]).strip()
@@ -59,6 +63,7 @@ async def chat(payload: ChatRequest) -> ChatResponse:
                 comments_limit=5,
             )
             reddit_items = list(r_result.items)
+            reddit_items = rerank_source_contents_by_query(reddit_items, q)
             for e in r_result.errors:
                 ingest_errors.append({"source": "reddit", "code": e.code, "message": e.message})
         except Exception as exc:  # noqa: BLE001
@@ -77,16 +82,33 @@ async def chat(payload: ChatRequest) -> ChatResponse:
     
     topic_search = payload.topic or payload.message
     facts = get_verified_facts_for_topic(topic_search)
-    
+
+    if not has_static_kb_for_topic(topic_search):
+        try:
+            orch = TrustedFactsOrchestrator()
+            trusted_api_lines, trusted_refs, trusted_debug = await orch.build_trusted_facts(
+                topic=payload.topic,
+                message=payload.message,
+            )
+            sources_out.extend(trusted_refs)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Trusted API orchestration failed: %s", exc)
+            trusted_debug = {"trusted_api_error": str(exc)}
+    else:
+        trusted_debug = {"trusted_api_skipped": True, "trusted_api_reason": "static_kb_matched"}
+
     import re
+
     for fact in facts:
-        match = re.search(r'\(([^)]+)\)\.$', fact.strip())
+        match = re.search(r"\(([^)]+)\)\.$", fact.strip())
         if match:
-            sources_out.append({
-                "source": "knowledge_base",
-                "label": match.group(1),
-                "url": None
-            })
+            sources_out.append(
+                {
+                    "source": "knowledge_base",
+                    "label": match.group(1),
+                    "url": None,
+                }
+            )
 
     system_prompt = build_socratic_system_prompt(
         topic=payload.topic,
@@ -94,6 +116,7 @@ async def chat(payload: ChatRequest) -> ChatResponse:
         history=payload.history,
         source_items=prompt_items,
         facts=facts,
+        trusted_api_fact_lines=trusted_api_lines,
     )
     user_content = build_socratic_user_content(message=payload.message)
 
@@ -110,6 +133,9 @@ async def chat(payload: ChatRequest) -> ChatResponse:
             "reddit_item_count": len(reddit_items),
             "ingest_errors": ingest_errors,
             "live_claude": True,
+            "trusted_api": trusted_debug,
+            "static_kb_matched": has_static_kb_for_topic(topic_search),
+            "trusted_api_lines_count": len(trusted_api_lines),
         }
     )
 
