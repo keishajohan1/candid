@@ -1,0 +1,4 @@
+# eval/reports/ — generated at runtime, not committed to version control.
+# Commit the directory itself but not the generated report files.
+*.md
+*.json
