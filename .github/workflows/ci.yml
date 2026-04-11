@@ -60,18 +60,17 @@ jobs:
   # ──────────────────────────────────────────────────────────────────────────
   # Job 3: AI Pre-Deployment Evaluation Suite
   #
-  # Runs the Guided Inquiry Engine against the 7-dimension rubric.
-  # Blocks deploy if overall avg score < 28 (Strong tier) or any red flag fires.
+  # CI runs in --stub mode: validates the eval pipeline structure (free, no API
+  # key required). This catches broken scenarios, import errors, and report
+  # generation failures on every push.
   #
-  # Requires: ANTHROPIC_API_KEY secret in GitHub repo settings.
-  # Cost: ~$0.05–0.15 per full run (Haiku judge + Claude agent).
+  # For real scored evaluations (actual agent responses + LLM judge scoring),
+  # run locally before a release:
+  #   PYTHONPATH=backend .venv/bin/python -m eval.run_eval --min-total 28
   # ──────────────────────────────────────────────────────────────────────────
   ai-eval:
     name: AI Pre-Deployment Evaluation
     runs-on: ubuntu-latest
-    # Only run eval on pushes to main and PRs targeting main.
-    # Skip on draft PRs to save API spend.
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -84,16 +83,13 @@ jobs:
       - name: Install backend dependencies
         run: pip install -r backend/requirements.txt
 
-      - name: Run AI evaluation suite
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          # Judge model: use Haiku for cost efficiency. Override to test with Sonnet.
-          EVAL_JUDGE_MODEL: claude-haiku-4-5
-        # --min-total 28 = "Strong" tier gate. Lower to 21 for Acceptable if needed.
-        run: python -m eval.run_eval --min-total 28
+      - name: Run eval pipeline validation (stub mode)
+        # Stub mode: no API calls, no cost, no secrets needed.
+        # Validates that all 21 scenarios load, the rubric scores, and
+        # the report files are generated correctly.
+        run: PYTHONPATH=backend python -m eval.run_eval --stub
 
       - name: Upload evaluation report
-        # Always upload the report, even if the eval failed, for debugging
         if: always()
         uses: actions/upload-artifact@v4
         with:
