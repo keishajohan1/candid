@@ -1,6 +1,20 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { sendChatMessage } from "../services/api";
 
+const ALL_SUGGESTIONS = [
+  "Explain the arguments for and against open-source AI models.",
+  "What's the nuance missing from modern climate policy debates?",
+  "Break down the socio-economic impacts of urban zoning laws.",
+  "Why is universal basic income controversial?",
+  "What are the differing perspectives on nuclear energy as a green solution?",
+  "How do economists view the long-term effects of rent control?",
+  "What are the primary arguments surrounding centralized vs. decentralized finance?",
+  "Explain the philosophical debates about free will versus determinism.",
+  "What is the historical debate surrounding the Electoral College?",
+  "What are the ethical concerns of gene editing technologies like CRISPR?",
+  "Why do opinions differ heavily on the implementation of wealth taxes?"
+];
+
 function generateLocalTitle(text) {
   let cleaned = text.replace(/^(can you explain|can you|what is|what's|what are|how do|how to|why is|why are|please tell me about|tell me about|explain|describe)\b/gi, '').trim();
   cleaned = cleaned.replace(/[?.!;,]+$/g, '').trim();
@@ -33,6 +47,12 @@ export default function ChatShell() {
   const [expandedRecent, setExpandedRecent] = useState(false);
   const [expandedSources, setExpandedSources] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState(null);
+  const [suggestionChips, setSuggestionChips] = useState([]);
+
+  useEffect(() => {
+    const shuffled = [...ALL_SUGGESTIONS].sort(() => 0.5 - Math.random());
+    setSuggestionChips(shuffled.slice(0, 3));
+  }, [activeSessionId]);
 
   const confirmDelete = () => {
     if (!sessionToDelete) return;
@@ -343,11 +363,7 @@ export default function ChatShell() {
             <div className="empty-state">
               <h2 className="empty-heading">What are you trying to understand?</h2>
               <div className="empty-chips">
-                {[
-                  "Explain the arguments for and against open-source AI models.",
-                  "What's the nuance missing from modern climate policy debates?",
-                  "Break down the socio-economic impacts of urban zoning laws."
-                ].map((chip, idx) => (
+                {suggestionChips.map((chip, idx) => (
                   <button
                     key={idx}
                     className="empty-chip"
