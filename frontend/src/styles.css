@@ -688,3 +688,13 @@ body {
   padding-bottom: 1rem;
   border-bottom: 1px solid #d1c9bd;
 }
+
+.citation-superscript {
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #669bbc;
+  vertical-align: super;
+  line-height: 0;
+  margin-left: 2px;
+}
