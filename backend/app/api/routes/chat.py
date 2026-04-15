@@ -127,6 +127,39 @@ async def chat(payload: ChatRequest) -> ChatResponse:
         sources_for_client=sources_out,
     )
 
+    response_text = result["response_text"]
+    if "<sources>" in response_text and "</sources>" in response_text:
+        main_text, rest = response_text.split("<sources>", 1)
+        sources_text, _ = rest.split("</sources>", 1)
+        result["response_text"] = main_text.strip()
+        
+        for line in sources_text.strip().split("\n"):
+            line = line.strip()
+            if line.startswith("[") and "]" in line:
+                label_part = line.split("]", 1)[1].strip()
+                if label_part.startswith("-"):
+                    label_part = label_part[1:].strip()
+                sources_out.append({
+                    "source": "Knowledge Base (LLM)",
+                    "label": label_part,
+                    "url": None
+                })
+    elif "DYNAMIC_SOURCES:" in response_text:
+        main_text, sources_text = response_text.split("DYNAMIC_SOURCES:", 1)
+        result["response_text"] = main_text.strip()
+        
+        for line in sources_text.strip().split("\n"):
+            line = line.strip()
+            if line.startswith("[") and "]" in line:
+                label_part = line.split("]", 1)[1].strip()
+                if label_part.startswith("-"):
+                    label_part = label_part[1:].strip()
+                sources_out.append({
+                    "source": "Knowledge Base (LLM)",
+                    "label": label_part,
+                    "url": None
+                })
+
     debug.update(
         {
             "source_count": len(sources_out),

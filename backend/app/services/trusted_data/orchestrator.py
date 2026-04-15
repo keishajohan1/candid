@@ -176,8 +176,7 @@ class TrustedFactsOrchestrator:
         if not lines and wb_inf:
             lines.append(
                 f"PROVISIONAL (single source — World Bank only): US CPI inflation "
-                f"{wb_inf['value']:.2f}% in {wb_inf['date']} (FP.CPI.TOTL.ZG). "
-                f"Set FRED_API_KEY for automatic corroboration with FRED."
+                f"{wb_inf['value']:.2f}% in {wb_inf['date']} (FP.CPI.TOTL.ZG)."
             )
             refs.append({"source": "world_bank", "label": "FP.CPI.TOTL.ZG", "url": wb_inf["citation_url"]})
 
@@ -235,8 +234,7 @@ class TrustedFactsOrchestrator:
         elif wb_pop:
             lines.append(
                 "PROVISIONAL (single source — World Bank): US population total "
-                f"{wb_pop['value']:,.0f} ({wb_pop['date']}, SP.POP.TOTL). "
-                "Add UN_DATAPORTAL_BEARER_TOKEN for UN corroboration."
+                f"{wb_pop['value']:,.0f} ({wb_pop['date']}, SP.POP.TOTL)."
             )
             refs.append({"source": "world_bank", "label": "SP.POP.TOTL", "url": wb_pop["citation_url"]})
         return lines, refs

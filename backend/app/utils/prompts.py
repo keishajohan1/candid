@@ -6,6 +6,7 @@ by this module plus user message and optional pre-fetched source snippets from
 the backend ingestion layer — it does not browse or scrape.
 """
 
+import datetime
 from typing import Any
 
 # ---------------------------------------------------------------------------
@@ -16,6 +17,8 @@ GUIDED_INQUIRY_SYSTEM_PROMPT_TEMPLATE = """
 ╔══════════════════════════════════════════════════════════════════╗
 ║         GUIDED INQUIRY ENGINE — SYSTEM IDENTITY                  ║
 ╚══════════════════════════════════════════════════════════════════╝
+
+The current date and time is: {current_date}
 
 You are an educational guided inquiry engine.
 Your purpose is to help users build genuine understanding
@@ -62,9 +65,14 @@ Absolutely NO prefixes like "**GROUND:**", "**TENSION:**", or
   Rules for this layer:
   · Only include what is NECESSARY for the user to engage
     with the question you are about to ask.
-  · Cite the nature of sources even if not verbatim:
-    "UN data shows…", "Economists broadly agree that…",
-    "This is contested — here are the two main positions…"
+  · EXPLICITLY CITE specific sources for any numbers, statistics,
+    or formal facts you share. NEVER state hard numbers without
+    naming exactly where they came from (e.g. World Bank, UN Data,
+    a specific research paper).
+  · USE FOOTNOTE MARKERS like [1], [2] at the end of the sentence
+    to explicitly link to the sources. YOU MUST USE THE NUMBER IN BRACKETS.
+    Bad: "According to OECD data, foreign aid flows have totaled..."
+    Good: "According to OECD data, foreign aid flows have totaled... [1]"
   · Never editorialize. Present the landscape, not your view of it.
   · Keep it tight. 2–4 sentences maximum.
   · If the user already demonstrates solid foundational knowledge,
@@ -438,11 +446,20 @@ RULE 7 — DISTRESS EXIT
   Acknowledge plainly. Do not use distress as leverage.
   Do not resume pressure until the user re-engages.
 
-RULE 8 — NO FABRICATION
+RULE 8 — NO FABRICATION & MANDATORY CITATIONS
   Use only the backend-supplied tiers: TIER 1A (static facts above), TIER 1B (trusted API lines above, when present),
   and TIER 2 social material in {social_media_excerpts}.
   Treat TIER 1B lines exactly as written—including CROSS-VERIFIED vs PROVISIONAL labels. Do not upgrade PROVISIONAL to "certain."
   Do not claim to browse or scrape external sources.
+  If you use any hard numbers or statistics from your pre-training data that are not in the provided numbered list, you MUST cite the specific organization or study producing them using continuation footnote markers (e.g., if the highest provided source was [3], use [4]).
+  CRITICAL RULE: If you create ANY new footnote markers for your own data, you MUST append them at the very end of your response exactly inside a `<sources>` block.
+  Example format:
+  
+  (your response text... [4])
+  
+  <sources>
+  [4] OECD Economic Outlook
+  </sources>
 
 RULE 9 — CONVERSATIONAL AUTHENTICITY & INVISIBLE ARCHITECTURE
   Never print structural labels to the user (e.g., "**LAYER 1**", "**GROUND:**").
@@ -574,13 +591,13 @@ def _topic_line(topic: str | None) -> str:
     return "(No single topic named — infer from the user's message.)"
 
 
-def format_source_block_for_prompt(items: list[dict[str, Any]]) -> str:
+def format_source_block_for_prompt(items: list[dict[str, Any]], start_idx: int = 1) -> str:
     """Format normalized source dicts for the user message (not the system prompt)."""
     if not items:
         return "No social media excerpts were supplied for this turn."
 
     lines: list[str] = ["Social media excerpts (retrieved by the backend, not by you):"]
-    for i, item in enumerate(items, start=1):
+    for i, item in enumerate(items, start=start_idx):
         src = item.get("source", "unknown")
         label = f"{src}"
         url = item.get("url") or ""
@@ -608,18 +625,17 @@ def build_socratic_system_prompt(
         if history
         else "No prior user messages recorded for this thread."
     )
-    excerpts_block = format_source_block_for_prompt(source_items)
-    tier1a = (
-        "TIER 1A — STATIC VERIFIED FACTS (curated knowledge base):\n"
-        + "\n".join(f"· {f}" for f in facts)
-        if facts
-        else "TIER 1A — STATIC VERIFIED FACTS: (none matched for this session's topic.)"
-    )
+    
+    idx = 1
+    excerpts_block = format_source_block_for_prompt(source_items, start_idx=idx)
+    idx += len(source_items)
+    
     t1b_lines = trusted_api_fact_lines or []
     if t1b_lines:
         tier1b = "TIER 1B — TRUSTED API FACTS (live; cross-verified or labeled provisional):\n" + "\n".join(
-            f"· {line}" for line in t1b_lines
+            f"[{i}] {line}" for i, line in enumerate(t1b_lines, start=idx)
         )
+        idx += len(t1b_lines)
     elif facts:
         tier1b = (
             "TIER 1B — TRUSTED API FACTS: (not fetched — Tier 1A static knowledge base "
@@ -631,7 +647,17 @@ def build_socratic_system_prompt(
             "API profile, missing optional keys, or providers returned no usable series.)"
         )
 
+    if facts:
+        tier1a = (
+            "TIER 1A — STATIC VERIFIED FACTS (curated knowledge base):\n"
+            + "\n".join(f"[{i}] {f}" for i, f in enumerate(facts, start=idx))
+        )
+        idx += len(facts)
+    else:
+        tier1a = "TIER 1A — STATIC VERIFIED FACTS: (none matched for this session's topic.)"
+
     return GUIDED_INQUIRY_SYSTEM_PROMPT_TEMPLATE.format(
+        current_date=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S %Z").strip(),
         topic_line=_topic_line(topic),
         turn_index=turn_index,
         prior_user_lines=history_block,

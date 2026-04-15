@@ -130,10 +130,14 @@ export default function ChatShell() {
 
   const renderMessageContent = (content) => {
     if (!content) return null;
-    const parts = content.split(/(\*(?!\*)[^*]+\*|_(?!_)[^_]+_)/g);
+    const parts = content.split(/(\*(?!\*)[^*]+\*|_(?!_)[^_]+_|\[\d+\])/g);
     return parts.map((part, i) => {
+      if (!part) return null;
       if ((part.startsWith('*') && part.endsWith('*')) || (part.startsWith('_') && part.endsWith('_'))) {
         return <em key={i}>{part.slice(1, -1)}</em>;
+      }
+      if (/^\[\d+\]$/.test(part)) {
+        return <sup key={i} className="citation-superscript">{part}</sup>;
       }
       return part;
     });
@@ -373,7 +377,7 @@ export default function ChatShell() {
                 <div className="bubble-sources">
                   {m.sources.map((s, i) => (
                     <span key={i} className="bubble-source">
-                      † {s.label || s.source}
+                      [{i + 1}] {s.label || s.source}
                     </span>
                   ))}
                 </div>
