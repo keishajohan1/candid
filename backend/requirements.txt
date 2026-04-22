@@ -16,5 +16,7 @@ langchain-chroma
 langsmith
 langchain-huggingface
 sentence-transformers
+langchain-community
+langgraph
 beautifulsoup4
 pypdf
