@@ -10,3 +10,13 @@ chromadb
 pytest
 pytest-asyncio
 pytest-cov
+langchain
+langchain-anthropic
+langchain-chroma
+langsmith
+langchain-huggingface
+sentence-transformers
+langchain-community
+langgraph
+beautifulsoup4
+pypdf

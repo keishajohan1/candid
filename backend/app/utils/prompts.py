@@ -486,7 +486,6 @@ SECTION 7 — INPUT VARIABLE REFERENCE
 
 {topic_line}             → Inquiry subject, or "general" if open
 {turn_index}             → Integer. Current exchange in thread.
-{prior_user_lines}       → All prior user messages this session.
 {tier1a_static_facts}    → Curated static facts (Tier 1A), or empty.
 {tier1b_trusted_api_facts} → Live API facts (Tier 1B), only when 1A empty; may be cross-verified or provisional.
 {social_media_excerpts}  → Backend-supplied Tier 2 social material, or empty.
@@ -622,19 +621,10 @@ def format_source_block_for_prompt(items: list[dict[str, Any]], start_idx: int =
 def build_socratic_system_prompt(
     topic: str | None,
     turn_index: int,
-    history: list[str],
     source_items: list[dict[str, Any]],
     facts: list[str],
     trusted_api_fact_lines: list[str] | None = None,
 ) -> str:
-    history = [h.strip() for h in history if h and h.strip()][-8:]
-    history_block = (
-        "Prior user messages in this thread (newest last):\n"
-        + "\n".join(f"- {h}" for h in history)
-        if history
-        else "No prior user messages recorded for this thread."
-    )
-    
     idx = 1
     excerpts_block = format_source_block_for_prompt(source_items, start_idx=idx)
     idx += len(source_items)
@@ -669,7 +659,6 @@ def build_socratic_system_prompt(
         current_date=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S %Z").strip(),
         topic_line=_topic_line(topic),
         turn_index=turn_index,
-        prior_user_lines=history_block,
         social_media_excerpts=excerpts_block,
         rag_data_contract=RAG_DATA_CONTRACT,
         tier1a_static_facts=tier1a,
