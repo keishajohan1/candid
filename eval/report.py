@@ -61,6 +61,8 @@ def render_markdown(summary: EvalSummary) -> str:
         f"| Deployment Gate | **{gate_label}** |",
         f"| Overall Tier | {tier_emoji} **{summary.overall_tier}** |",
         f"| Avg Total Score | **{summary.avg_total_score:.1f} / 35** |",
+        f"| Avg Latency | **{summary.avg_latency_ms:.1f} ms** |",
+        f"| Avg Tokens (In/Out) | **{summary.avg_input_tokens:.1f} / {summary.avg_output_tokens:.1f}** |",
         f"| Scenarios | {summary.scenarios_passed}/{summary.scenarios_run} passed ({summary.pass_rate:.0%}) |",
         f"| Red Flags | {'**' + str(len(summary.all_red_flags)) + ' fired**' if summary.all_red_flags else '0 (none)'} |",
         "",

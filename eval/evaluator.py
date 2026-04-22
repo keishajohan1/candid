@@ -36,6 +36,7 @@ class ScenarioResult:
     agent_response: str
     system_prompt_used: str
     judgements: list[JudgementResult]
+    usage: dict = field(default_factory=dict)
     error: str | None = None  # set if the agent call itself failed
 
     @property
@@ -76,6 +77,9 @@ class EvalSummary:
 
     # Total score averaged across scenarios
     avg_total_score: float = 0.0
+    avg_latency_ms: float = 0.0
+    avg_input_tokens: float = 0.0
+    avg_output_tokens: float = 0.0
     overall_tier: str = ""
 
     # Red flags fired across all scenarios
@@ -154,9 +158,10 @@ class EvalRunner:
         system_prompt = ""
         agent_response = ""
         error: str | None = None
+        usage: dict = {}
 
         try:
-            system_prompt, agent_response = await self._call_agent(scenario)
+            system_prompt, agent_response, usage = await self._call_agent(scenario)
         except Exception as exc:
             error = str(exc)
             logger.error("Agent call failed for scenario %s: %s", scenario.id, exc)
@@ -187,10 +192,11 @@ class EvalRunner:
             agent_response=agent_response,
             system_prompt_used=system_prompt,
             judgements=judgements,
+            usage=usage,
             error=error,
         )
 
-    async def _call_agent(self, scenario: EvalScenario) -> tuple[str, str]:
+    async def _call_agent(self, scenario: EvalScenario) -> tuple[str, str, dict]:
         """Build the Candid system prompt and call the Guided Inquiry Engine."""
         from app.services.knowledge_base import get_verified_facts_for_topic
         from app.utils.prompts import (
@@ -217,7 +223,7 @@ class EvalRunner:
                 "Where would you like to focus: the monetary mechanisms, the supply-side factors, "
                 "or the distributional impacts on different income groups?"
             )
-            return system_prompt, stub_response
+            return system_prompt, stub_response, {"latency_ms": 100, "input_tokens": 10, "output_tokens": 20}
 
         from app.services.claude_service import ClaudeService
 
@@ -228,7 +234,7 @@ class EvalRunner:
             user_content=user_content,
             sources_for_client=[],
         )
-        return system_prompt, result["response_text"]
+        return system_prompt, result["response_text"], result.get("usage", {})
 
 
     def _compute_summary(
@@ -266,6 +272,10 @@ class EvalRunner:
         )
         overall_tier = score_tier(int(round(avg_total)))
 
+        avg_latency = sum(r.usage.get("latency_ms", 0) for r in results) / len(results) if results else 0.0
+        avg_in_tokens = sum(r.usage.get("input_tokens", 0) for r in results) / len(results) if results else 0.0
+        avg_out_tokens = sum(r.usage.get("output_tokens", 0) for r in results) / len(results) if results else 0.0
+
         gate_passed = (
             not all_red_flags
             and avg_total >= min_total
@@ -283,6 +293,9 @@ class EvalRunner:
             scenario_results=results,
             dimension_averages=dimension_averages,
             avg_total_score=avg_total,
+            avg_latency_ms=avg_latency,
+            avg_input_tokens=avg_in_tokens,
+            avg_output_tokens=avg_out_tokens,
             overall_tier=overall_tier,
             all_red_flags=all_red_flags,
             deployment_gate_passed=gate_passed,

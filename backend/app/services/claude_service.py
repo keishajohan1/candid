@@ -18,6 +18,8 @@ class ClaudeService:
         user_content: str,
         sources_for_client: list[dict[str, Any]],
     ) -> dict[str, Any]:
+        import time
+        start_time = time.perf_counter()
         result = await self._client.messages.create(
             model=settings.claude_model,
             max_tokens=settings.claude_max_output_tokens,
@@ -32,10 +34,17 @@ class ClaudeService:
         response_text = "\n".join(text_parts).strip()
         if not response_text:
             raise RuntimeError("Anthropic returned an empty text response")
+        latency_ms = (time.perf_counter() - start_time) * 1000
+        
         return {
             "response_text": response_text,
             "mode": "live",
             "sources": sources_for_client,
+            "usage": {
+                "input_tokens": getattr(result.usage, "input_tokens", 0),
+                "output_tokens": getattr(result.usage, "output_tokens", 0),
+                "latency_ms": latency_ms
+            },
             "reflection": {
                 "note": "Response from Claude using backend-supplied excerpts only; model did not scrape.",
             },
