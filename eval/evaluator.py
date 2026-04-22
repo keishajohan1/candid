@@ -27,6 +27,8 @@ from eval.judge import JudgementResult, LLMJudge, StubJudge
 from eval.personas import ALL_SCENARIOS, EvalScenario, scenarios_for_category
 from eval.rubric import RUBRIC, RED_FLAG_OTHER, RubricDimension, score_tier
 
+from langsmith import traceable
+
 logger = logging.getLogger(__name__)
 
 
@@ -196,6 +198,7 @@ class EvalRunner:
             error=error,
         )
 
+    @traceable(name="Evaluate_Agent_Call")
     async def _call_agent(self, scenario: EvalScenario) -> tuple[str, str, dict]:
         """Build the Candid system prompt and call the Guided Inquiry Engine."""
         from app.services.knowledge_base import get_verified_facts_for_topic
@@ -208,7 +211,6 @@ class EvalRunner:
         system_prompt = build_socratic_system_prompt(
             topic=scenario.topic,
             turn_index=scenario.turn_index,
-            history=scenario.prior_messages,
             source_items=[],  # No social media excerpts in eval
             facts=facts,
             trusted_api_fact_lines=None,
@@ -232,6 +234,7 @@ class EvalRunner:
         result = await service.generate_socratic_response(
             system_prompt=system_prompt,
             user_content=user_content,
+            history=scenario.prior_messages,
             sources_for_client=[],
         )
         return system_prompt, result["response_text"], result.get("usage", {})

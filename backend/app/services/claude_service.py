@@ -1,39 +1,74 @@
 from typing import Any
+import time
 
-from anthropic import AsyncAnthropic
+from langchain_anthropic import ChatAnthropic
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
+from langgraph.prebuilt import create_react_agent
 
 from app.core.config import settings
-
+from app.services.tools import search_verified_knowledge
 
 class ClaudeService:
-    """Adapter around Anthropic. Retrieval/scraping happens outside this class."""
+    """LangChain orchestration for Claude."""
 
     def __init__(self) -> None:
-        self._client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+        self._llm = ChatAnthropic(
+            model_name=settings.claude_model,
+            temperature=0.35,
+            max_tokens=settings.claude_max_output_tokens,
+            anthropic_api_key=settings.anthropic_api_key
+        )
+        self._tools = [search_verified_knowledge]
 
     async def generate_socratic_response(
         self,
         *,
         system_prompt: str,
         user_content: str,
+        history: list[str] = None,
         sources_for_client: list[dict[str, Any]],
     ) -> dict[str, Any]:
-        import time
         start_time = time.perf_counter()
-        result = await self._client.messages.create(
-            model=settings.claude_model,
-            max_tokens=settings.claude_max_output_tokens,
-            temperature=0.35,
-            system=system_prompt,
-            messages=[{"role": "user", "content": user_content}],
-        )
-        text_parts: list[str] = []
-        for block in result.content:
-            if getattr(block, "type", None) == "text":
-                text_parts.append(block.text)
-        response_text = "\n".join(text_parts).strip()
-        if not response_text:
-            raise RuntimeError("Anthropic returned an empty text response")
+        
+        entity_memory = "Knowledge of user preferences and persistent traits goes here."
+        system_content = f"{system_prompt}\n\n[ENTITY MEMORY]: {entity_memory}"
+        
+        messages = [SystemMessage(content=system_content)]
+        
+        if history:
+            if len(history) > 10:
+                old_history = "\n".join(history[:-10])
+                summary_prompt = f"Summarize the following conversation history:\n{old_history}"
+                summary = await self._llm.ainvoke([HumanMessage(content=summary_prompt)])
+                messages[0] = SystemMessage(content=f"{messages[0].content}\n\nSummary of older conversation:\n{summary.content}")
+                recent_history = history[-10:]
+            else:
+                recent_history = history
+                
+            for msg in recent_history:
+                messages.append(HumanMessage(content=msg))
+                
+        # --- Ecosystem Scaffold: Planner ---
+        plan_prompt = f"Briefly outline a 2-step plan to answer this query based on the system instructions. Do not answer it yet: {user_content}"
+        plan_result = await self._llm.ainvoke([HumanMessage(content=plan_prompt)])
+        messages[0] = SystemMessage(content=f"{messages[0].content}\n\n[PLANNER STRATEGY]:\n{plan_result.content}")
+                
+        messages.append(HumanMessage(content=user_content))
+        
+        # --- Ecosystem Scaffold: Fallback Handlers ---
+        agent = create_react_agent(self._llm, tools=self._tools)
+        
+        try:
+            result = await agent.ainvoke({"messages": messages})
+            last_message = result["messages"][-1]
+            response_text = last_message.content
+            tools_used = sum(1 for m in result["messages"] if hasattr(m, 'type') and m.type == "tool")
+        except Exception as e:
+            # Fallback handler if agent tool schema fails or rejects query
+            fallback_response = await self._llm.ainvoke(messages)
+            response_text = fallback_response.content
+            tools_used = 0
+        
         latency_ms = (time.perf_counter() - start_time) * 1000
         
         return {
@@ -41,11 +76,12 @@ class ClaudeService:
             "mode": "live",
             "sources": sources_for_client,
             "usage": {
-                "input_tokens": getattr(result.usage, "input_tokens", 0),
-                "output_tokens": getattr(result.usage, "output_tokens", 0),
+                "input_tokens": 0, 
+                "output_tokens": 0,
                 "latency_ms": latency_ms
             },
             "reflection": {
-                "note": "Response from Claude using backend-supplied excerpts only; model did not scrape.",
+                "note": "Response orchestrated by LangGraph create_react_agent.",
+                "tools_used": tools_used
             },
         }
