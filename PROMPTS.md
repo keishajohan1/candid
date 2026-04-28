@@ -4,6 +4,36 @@ Entries record prompts used for substantial AI-assisted changes (no secrets).
 
 ---
 
+## 2026-04-28 — `refactor/modular-prompt-skills`
+
+**Prompt (summary):** Refactor monolithic `prompts.py` into modular `backend/app/prompts/` skill architecture with conditional injection by `turn_index`; wire imports (`app/core/prompts.py`, builder); replace legacy file content after verification.
+
+**Changes implemented:** Added `app/prompts/` (`builder.py`, `skills/` identity, interaction_model with `FIRST_TURN_INTERACTION_SKILL`, cognitive_protocol, persona_engine, reddit_handler, rag_contract, `formatters.py`, `user_content.py`), barrel `app/core/prompts.py`; thin `app/utils/prompts.py` + updated `prompts_next.py`; switched `chat.py` and `eval/evaluator.py` to `app.prompts`; README updates; `.coveragerc` omits for compatibility shims; tests (`test_prompts_build.py`, `test_prompt_user_content.py`, expanded `test_chat.py`) — pytest passes at ≥80% coverage.
+
+**Branch:** `refactor/modular-prompt-skills`
+
+---
+
+## 2026-04-28 — `feature/prompts-next-staging`
+
+**Prompt (summary):** Do not delete original `prompts.py` yet; work alongside it until all imports are confirmed for the instructions to follow.
+
+**Changes implemented:** Added `backend/app/utils/prompts_next.py` as a parallel re-export of the public prompt helpers from `prompts.py` (no removal of `prompts.py`); noted the pattern in `backend/README.md`.
+
+**Branch:** `feature/prompts-next-staging`
+
+---
+
+## 2026-04-28 — `fix/langchain-text-splitters-deps`
+
+**Prompt (summary):** Fix unresolved import `langchain_text_splitters` in `backend/app/services/knowledge_base.py` (lines 9–12); verify and explain concisely.
+
+**Changes implemented:** Declared `langchain-text-splitters` in `backend/requirements.txt`; updated README technology stack to mention it alongside other LangChain pieces.
+
+**Branch:** `fix/langchain-text-splitters-deps`
+
+---
+
 ## 2026-03-28 — `fix/reddit-service-backcompat`
 
 **Prompt (summary):** Realign `reddit_service.py`: module-level `SORT_STRATEGIES`, `SUBREDDITS_BY_TOPIC` (incl. telecoms), `DEFAULT_SUBREDDITS`; backward-compatible `search(..., turn=0, topic="")` and `_search_posts(..., turn=0)`; `_search_subreddit` with `restrict_sr: True`; class-level `_search_all_sources`; `search` body calling `_search_all_sources` with explicit kwargs, loop posts + optional comments, dedupe/shuffle/cap 30; `asyncio` at module top.

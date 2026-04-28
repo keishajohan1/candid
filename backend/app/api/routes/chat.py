@@ -11,7 +11,7 @@ from app.services.safety.guardrails import GuardrailsService
 from app.services.safety.moderation import ModerationService
 from app.services.scrapers.reddit_service import RedditIngestionService
 from app.services.trusted_data import TrustedFactsOrchestrator
-from app.utils.prompts import (
+from app.prompts import (
     build_socratic_system_prompt,
     build_socratic_user_content,
     lightweight_sources_for_response,

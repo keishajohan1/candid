@@ -4,6 +4,9 @@ omit =
     app/services/rag/chroma_client.py
     app/services/scrapers/reddit_service.py
     app/services/trusted_data/un_client.py
+    app/utils/prompts.py
+    app/utils/prompts_next.py
+    app/core/prompts.py
 
 [report]
 exclude_lines =

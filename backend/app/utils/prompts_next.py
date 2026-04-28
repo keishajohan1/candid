@@ -1,4 +1,6 @@
-"""Backward-compatible imports — canonical modular prompts live in ``app.prompts``."""
+"""Parallel surface — forwards to modular ``app.prompts``."""
+
+from __future__ import annotations
 
 from app.prompts import (
     build_socratic_system_prompt,

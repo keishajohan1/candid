@@ -5,13 +5,14 @@ The project is designed to guide users through facts, sources, and multiple pers
 
 ## Technology stack
 
-- **Backend:** Python 3.11+, FastAPI, Uvicorn, Anthropic SDK, httpx, Pydantic, rank-bm25 (BM25 rerank), pytest / pytest-cov.
+- **Backend:** Python 3.11+, FastAPI, Uvicorn, Anthropic SDK, httpx, Pydantic, rank-bm25 (BM25 rerank), LangChain ecosystem (including `langchain-text-splitters`), pytest / pytest-cov.
 - **Frontend:** React, Vite.
 - **Trusted data APIs (Tier 1B):** World Bank Indicators API v2 (no key), FRED (optional API key), UN Population Data Portal `data` routes (optional Bearer token).
 
 ## Repository layout
 
 - `backend/` FastAPI API server, service modules, tests, and backend container image.
+- `backend/app/prompts/` modular Socratic prompt skills (`builder.py`, `skills/`, `formatters.py`, `user_content.py`); `backend/app/utils/prompts.py` compatibility re-exports (see `backend/README.md`).
 - `backend/app/services/trusted_data/` Tier 1B trusted API orchestration (World Bank, optional FRED, optional UN bearer).
 - `frontend/` React + Vite web client scaffold.
 - `docs/` future architecture, product, and operations docs.

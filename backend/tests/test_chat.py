@@ -48,6 +48,11 @@ def test_chat_runs_trusted_stub_when_no_kb_match(monkeypatch) -> None:
     from app.services.trusted_data.orchestrator import TrustedFactsOrchestrator
 
     monkeypatch.setattr(TrustedFactsOrchestrator, "build_trusted_facts", fake_build)
+    # Semantic KB retrieval can still return unrelated excerpts for arbitrary topics.
+    monkeypatch.setattr(
+        "app.api.routes.chat.has_static_kb_for_topic",
+        lambda *_a, **_kw: False,
+    )
 
     client = TestClient(app)
     response = client.post(
@@ -78,3 +83,115 @@ def test_chat_validation_rejects_empty_message() -> None:
     client = TestClient(app)
     response = client.post("/api/v1/chat", json={"message": ""})
     assert response.status_code == 422
+
+
+def test_chat_fetch_sources_reddit_exception_records_ingest_error(monkeypatch) -> None:
+    from app.services.scrapers.reddit_service import RedditIngestionService
+
+    async def boom(_self, **_kwargs):
+        raise RuntimeError("reddit unavailable")
+
+    monkeypatch.setattr(RedditIngestionService, "search", boom)
+
+    client = TestClient(app)
+    response = client.post(
+        "/api/v1/chat",
+        json={"message": "hello", "fetch_sources": True},
+    )
+    assert response.status_code == 200
+    errs = response.json()["debug"]["ingest_errors"]
+    assert any(e.get("source") == "reddit" and e.get("code") == "exception" for e in errs)
+
+
+def test_chat_fetch_sources_guardrails_exception_logged(monkeypatch) -> None:
+    from app.models.ingest import IngestResponse
+    from app.models.source_content import SourceContent
+    from app.services.safety.guardrails import GuardrailsService
+    from app.services.scrapers.reddit_service import RedditIngestionService
+
+    async def fake_search(_self, **_kwargs):
+        item = SourceContent(
+            source="reddit",
+            platform_id="p1",
+            content_type="post",
+            url="https://example.com/a",
+            content_text="discussion text",
+            title="t",
+            subreddit="news",
+        )
+        return IngestResponse(source="reddit", query="hello", items=[item], errors=[])
+
+    async def boom_guard(_self, _items):
+        raise RuntimeError("guardrails")
+
+    monkeypatch.setattr(RedditIngestionService, "search", fake_search)
+    monkeypatch.setattr(GuardrailsService, "apply_excerpt_guardrails", boom_guard)
+
+    client = TestClient(app)
+    response = client.post(
+        "/api/v1/chat",
+        json={"message": "hello", "fetch_sources": True},
+    )
+    assert response.status_code == 200
+
+
+def test_chat_trusted_orchestrator_exception_sets_debug(monkeypatch) -> None:
+    from app.services.trusted_data.orchestrator import TrustedFactsOrchestrator
+
+    async def boom(_self, **_kwargs):
+        raise ValueError("trusted boom")
+
+    monkeypatch.setattr(TrustedFactsOrchestrator, "build_trusted_facts", boom)
+    monkeypatch.setattr(
+        "app.api.routes.chat.has_static_kb_for_topic",
+        lambda *_a, **_kw: False,
+    )
+
+    client = TestClient(app)
+    response = client.post(
+        "/api/v1/chat",
+        json={"message": "Economy question.", "topic": "topic_without_kb_xyz"},
+    )
+    assert response.status_code == 200
+    dbg = response.json()["debug"]["trusted_api"]
+    assert dbg.get("trusted_api_error") == "trusted boom"
+
+
+def test_chat_llm_sources_tag_appends_kb_sources(monkeypatch) -> None:
+    from app.services.claude_service import ClaudeService
+
+    async def fake_gen(_self, *, system_prompt, user_content, sources_for_client):
+        return {
+            "response_text": 'Ack.\n<sources>\n[4] - OECD Economic Outlook\n</sources>',
+            "mode": "live",
+            "sources": sources_for_client,
+            "reflection": {},
+        }
+
+    monkeypatch.setattr(ClaudeService, "generate_socratic_response", fake_gen)
+
+    client = TestClient(app)
+    response = client.post("/api/v1/chat", json={"message": "Hi"})
+    assert response.status_code == 200
+    sources = response.json()["sources"]
+    assert any(s.get("label") == "OECD Economic Outlook" for s in sources)
+
+
+def test_chat_dynamic_sources_marker_appends_kb_sources(monkeypatch) -> None:
+    from app.services.claude_service import ClaudeService
+
+    async def fake_gen(_self, *, system_prompt, user_content, sources_for_client):
+        return {
+            "response_text": "Intro.\nDYNAMIC_SOURCES:\n[5] - Other Study Name\n",
+            "mode": "live",
+            "sources": sources_for_client,
+            "reflection": {},
+        }
+
+    monkeypatch.setattr(ClaudeService, "generate_socratic_response", fake_gen)
+
+    client = TestClient(app)
+    response = client.post("/api/v1/chat", json={"message": "Hi"})
+    assert response.status_code == 200
+    sources = response.json()["sources"]
+    assert any(s.get("label") == "Other Study Name" for s in sources)

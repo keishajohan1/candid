@@ -33,7 +33,7 @@ The backend provides Candid API modules: **Socratic debate chat** (Claude consum
 
 ## Chat behavior (rules location)
 
-Socratic rules and prompt assembly live in **`app/utils/prompts.py`**. The chat route builds a **system** prompt + **user** message.
+Canonical prompt assembly lives in **`app/prompts/`** (`builder.build_socratic_system_prompt`, skill modules under **`app/prompts/skills/`**, **`formatters.py`**, **`user_content.py`**). **`app/utils/prompts.py`** re-exports the same API for older imports; **`app/core/prompts.py`** is an optional barrel import. The chat route builds a **system** prompt + **user** message.
 
 **Tiered context**
 
