@@ -16,6 +16,7 @@ def test_chat_returns_live_response_with_stubbed_claude() -> None:
     assert payload["response_text"] == "Test assistant reply."
     assert "debug" in payload
     assert payload["debug"].get("fetch_sources") is False
+    assert "input_guardrails" in payload["debug"]
     assert "static_kb_matched" in payload["debug"]
 
 
@@ -171,7 +172,7 @@ def test_chat_llm_sources_tag_appends_kb_sources(monkeypatch) -> None:
     monkeypatch.setattr(ClaudeService, "generate_socratic_response", fake_gen)
 
     client = TestClient(app)
-    response = client.post("/api/v1/chat", json={"message": "Hi"})
+    response = client.post("/api/v1/chat", json={"message": "Hello there"})
     assert response.status_code == 200
     sources = response.json()["sources"]
     assert any(s.get("label") == "OECD Economic Outlook" for s in sources)
@@ -191,7 +192,7 @@ def test_chat_dynamic_sources_marker_appends_kb_sources(monkeypatch) -> None:
     monkeypatch.setattr(ClaudeService, "generate_socratic_response", fake_gen)
 
     client = TestClient(app)
-    response = client.post("/api/v1/chat", json={"message": "Hi"})
+    response = client.post("/api/v1/chat", json={"message": "Hello there"})
     assert response.status_code == 200
     sources = response.json()["sources"]
     assert any(s.get("label") == "Other Study Name" for s in sources)

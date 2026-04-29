@@ -17,6 +17,14 @@ class SourceContent(BaseModel):
     platform_id: str = Field(..., description="Original platform item ID")
     content_type: str = Field(..., description="post, comment, video, caption, etc.")
     content_classification: str | None = Field(default=None, description="Semantic type: argument, testimony, cited claim, consensus")
+    bias_risk: bool | None = Field(
+        default=None,
+        description="Stage 2 excerpt guardrail: strong ideological framing risk.",
+    )
+    misinformation_risk: bool | None = Field(
+        default=None,
+        description="Stage 2 excerpt guardrail: contested or unverifiable factual claim risk.",
+    )
     subreddit: str | None = None
     ideological_lean: str | None = None
     author: str | None = None

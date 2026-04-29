@@ -43,6 +43,8 @@ def source_items_for_prompt_from_ingestion(
                 "url": url,
                 "excerpt": str(excerpt) if excerpt else "",
                 "platform_id": getattr(obj, "platform_id", None),
+                "bias_risk": getattr(obj, "bias_risk", None),
+                "misinformation_risk": getattr(obj, "misinformation_risk", None),
             }
         )
 

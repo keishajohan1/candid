@@ -35,13 +35,15 @@ The backend provides Candid API modules: **Socratic debate chat** (Claude consum
 
 Canonical prompt assembly lives in **`app/prompts/`** (`builder.build_socratic_system_prompt`, skill modules under **`app/prompts/skills/`**, **`formatters.py`**, **`user_content.py`**). **`app/utils/prompts.py`** re-exports the same API for older imports; **`app/core/prompts.py`** is an optional barrel import. The chat route builds a **system** prompt + **user** message.
 
+**Safety pipeline (`POST /api/v1/chat`):** Stage 1 — **`GuardrailsService.apply_input_guardrails`** (rules, no LLM) after **`ModerationService.precheck`**, before Reddit/Claude. Stage 2 — **`apply_excerpt_guardrails`** (LLM) on top Reddit excerpts, writing **`bias_risk`** / **`misinformation_risk`** on **`SourceContent`**. Stage 3 — **`apply_output_guardrails`** on assistant text before JSON is returned.
+
 **Tiered context**
 
 - **Tier 1A:** `knowledge_base.get_verified_facts_for_topic(topic or message)` when the topic matches a curated bucket.
 - **Tier 1B:** `TrustedFactsOrchestrator` calls **World Bank** (always, no key), **FRED** (if `FRED_API_KEY`), **UN Data Portal** (if `UN_DATAPORTAL_BEARER_TOKEN`) **only when Tier 1A returned no facts**, to avoid conflicting numbers. Economy metrics prefer **cross-verified** lines (WB+FRED). Climate uses **two distinct World Bank series** with explicit same-publisher labeling. Population uses **WB+UN** when UN auth is available.
-- **Tier 2:** Optional **`fetch_sources: true`** → Reddit → **BM25 rerank** (`rerank_bm25.py`) → guardrails on top excerpts → excerpt block in the system prompt (`social_media_excerpts`).
+- **Tier 2:** Optional **`fetch_sources: true`** → Reddit → **BM25 rerank** (`rerank_bm25.py`) → **Stage 2 excerpt guardrails** (classify + **BIAS_RISK** / **MISINFO_RISK** flags + PII scrub) → excerpt block in the system prompt.
 
-`debug` on chat responses includes **`trusted_api`**, **`static_kb_matched`**, **`trusted_api_lines_count`**.
+`debug` on chat responses includes **`input_guardrails`**, **`trusted_api`**, **`static_kb_matched`**, **`trusted_api_lines_count`**.
 
 ## Ingestion viability (audit)
 

@@ -5,6 +5,9 @@ REDDIT_HANDLER_SKILL = """
 When {social_media_excerpts} are sourced from Reddit,
 the following rules are NON-NEGOTIABLE:
 
+Backend ingestion may annotate excerpts with BIAS_RISK and MISINFO_RISK flags (see excerpt lines below).
+Weight ideological framing and contested factual claims accordingly—especially when both flags appear.
+
 RULE R1 — NEVER PRESENT REDDIT AS FACTUAL EVIDENCE
   Reddit excerpts demonstrate how people THINK and FEEL
   about a topic. They are not evidence that something

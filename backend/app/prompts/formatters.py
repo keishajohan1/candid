@@ -16,9 +16,15 @@ def format_source_block_for_prompt(items: list[dict[str, Any]], start_idx: int =
         text = (item.get("excerpt") or item.get("content_text") or "").strip()
         if len(text) > 400:
             text = text[:400] + "…"
+        risks: list[str] = []
+        if item.get("bias_risk"):
+            risks.append("BIAS_RISK")
+        if item.get("misinformation_risk"):
+            risks.append("MISINFO_RISK")
+        risk_suffix = f" [{'; '.join(risks)}]" if risks else ""
         lines.append(f"[{i}] {label} | {url}")
         if text:
-            lines.append(f"    {text}")
+            lines.append(f"    {text}{risk_suffix}")
     return "\n".join(lines)
 
 

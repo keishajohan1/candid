@@ -4,11 +4,31 @@ Entries record prompts used for substantial AI-assisted changes (no secrets).
 
 ---
 
+## 2026-04-28 — `feature/guardrails-three-stage`
+
+**Prompt (summary):** Refactor `guardrails.py` into a three-stage pipeline: rule-based input guardrails before Reddit/Claude; LLM-based excerpt labeling with bias/misinformation risk flags on `SourceContent`; rule-based output guardrails after Claude; wire `chat.py`.
+
+**Changes implemented:** `GuardrailResult`, `apply_input_guardrails`, `apply_output_guardrails`, expanded `apply_excerpt_guardrails` (prompt + parse), `SourceContent.bias_risk` / `misinformation_risk`, `formatters` / `user_content` / `reddit_handler` risk hints, `tests/test_guardrails.py`, chat test message length fix, `backend/README.md` safety note.
+
+**Branch:** `feature/guardrails-three-stage`
+
+---
+
+## 2026-04-28 — `chore/remove-prompts-next-shim`
+
+**Prompt (summary):** Point code at a single prompts shim and delete the redundant file (`prompts_next.py` vs `prompts.py`).
+
+**Changes implemented:** Removed `backend/app/utils/prompts_next.py`; dropped its `omit` entry from `backend/.coveragerc`. Canonical compatibility imports remain only in `backend/app/utils/prompts.py` (re-exporting `app.prompts`).
+
+**Branch:** `chore/remove-prompts-next-shim`
+
+---
+
 ## 2026-04-28 — `refactor/modular-prompt-skills`
 
 **Prompt (summary):** Refactor monolithic `prompts.py` into modular `backend/app/prompts/` skill architecture with conditional injection by `turn_index`; wire imports (`app/core/prompts.py`, builder); replace legacy file content after verification.
 
-**Changes implemented:** Added `app/prompts/` (`builder.py`, `skills/` identity, interaction_model with `FIRST_TURN_INTERACTION_SKILL`, cognitive_protocol, persona_engine, reddit_handler, rag_contract, `formatters.py`, `user_content.py`), barrel `app/core/prompts.py`; thin `app/utils/prompts.py` + updated `prompts_next.py`; switched `chat.py` and `eval/evaluator.py` to `app.prompts`; README updates; `.coveragerc` omits for compatibility shims; tests (`test_prompts_build.py`, `test_prompt_user_content.py`, expanded `test_chat.py`) — pytest passes at ≥80% coverage.
+**Changes implemented:** Added `app/prompts/` (`builder.py`, `skills/` identity, interaction_model with `FIRST_TURN_INTERACTION_SKILL`, cognitive_protocol, persona_engine, reddit_handler, rag_contract, `formatters.py`, `user_content.py`), barrel `app/core/prompts.py`; thin `app/utils/prompts.py`; switched `chat.py` and `eval/evaluator.py` to `app.prompts`; README updates; `.coveragerc` omits for compatibility shims; tests (`test_prompts_build.py`, `test_prompt_user_content.py`, expanded `test_chat.py`) — pytest passes at ≥80% coverage.
 
 **Branch:** `refactor/modular-prompt-skills`
 
