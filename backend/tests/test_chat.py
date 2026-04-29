@@ -15,7 +15,7 @@ def test_chat_returns_live_response_with_stubbed_claude() -> None:
     assert "response_text" in payload
     assert payload["response_text"] == "Test assistant reply."
     assert "debug" in payload
-    assert payload["debug"].get("fetch_sources") is False
+    assert payload["debug"].get("ingestion_query")
     assert "input_guardrails" in payload["debug"]
     assert "static_kb_matched" in payload["debug"]
 
@@ -24,7 +24,7 @@ def test_chat_skips_trusted_api_when_static_kb_matches() -> None:
     client = TestClient(app)
     response = client.post(
         "/api/v1/chat",
-        json={"message": "Tell me about climate change impacts.", "topic": "climate change"},
+        json={"message": "Tell me about climate change impacts."},
     )
     assert response.status_code == 200
     dbg = response.json()["debug"]
@@ -60,7 +60,6 @@ def test_chat_runs_trusted_stub_when_no_kb_match(monkeypatch) -> None:
         "/api/v1/chat",
         json={
             "message": "What is the current inflation outlook for the US economy?",
-            "topic": "xyzzy_no_kb_bucket_12345",
         },
     )
     assert response.status_code == 200
@@ -86,7 +85,7 @@ def test_chat_validation_rejects_empty_message() -> None:
     assert response.status_code == 422
 
 
-def test_chat_fetch_sources_reddit_exception_records_ingest_error(monkeypatch) -> None:
+def test_chat_reddit_exception_records_ingest_error(monkeypatch) -> None:
     from app.services.scrapers.reddit_service import RedditIngestionService
 
     async def boom(_self, **_kwargs):
@@ -97,14 +96,14 @@ def test_chat_fetch_sources_reddit_exception_records_ingest_error(monkeypatch) -
     client = TestClient(app)
     response = client.post(
         "/api/v1/chat",
-        json={"message": "hello", "fetch_sources": True},
+        json={"message": "hello"},
     )
     assert response.status_code == 200
     errs = response.json()["debug"]["ingest_errors"]
     assert any(e.get("source") == "reddit" and e.get("code") == "exception" for e in errs)
 
 
-def test_chat_fetch_sources_guardrails_exception_logged(monkeypatch) -> None:
+def test_chat_reddit_guardrails_exception_logged(monkeypatch) -> None:
     from app.models.ingest import IngestResponse
     from app.models.source_content import SourceContent
     from app.services.safety.guardrails import GuardrailsService
@@ -131,7 +130,7 @@ def test_chat_fetch_sources_guardrails_exception_logged(monkeypatch) -> None:
     client = TestClient(app)
     response = client.post(
         "/api/v1/chat",
-        json={"message": "hello", "fetch_sources": True},
+        json={"message": "hello"},
     )
     assert response.status_code == 200
 
@@ -151,7 +150,7 @@ def test_chat_trusted_orchestrator_exception_sets_debug(monkeypatch) -> None:
     client = TestClient(app)
     response = client.post(
         "/api/v1/chat",
-        json={"message": "Economy question.", "topic": "topic_without_kb_xyz"},
+        json={"message": "Economy question."},
     )
     assert response.status_code == 200
     dbg = response.json()["debug"]["trusted_api"]

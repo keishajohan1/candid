@@ -18,9 +18,11 @@ from app.prompts.skills.rag_contract import get_rag_contract_skill
 from app.prompts.skills.reddit_handler import REDDIT_HANDLER_SKILL
 
 
-def _topic_line(topic: str | None) -> str:
+def _topic_line(topic: str | None, user_message: str = "") -> str:
     if topic and topic.strip():
         return topic.strip()
+    if user_message and user_message.strip():
+        return user_message.strip()
     return "(No single topic named — infer from the user's message.)"
 
 
@@ -31,12 +33,13 @@ def build_socratic_system_prompt(
     facts: list[str],
     trusted_api_fact_lines: list[str] | None = None,
     history: list[str] | None = None,
+    user_message: str = "",
 ) -> str:
     """Compose conditional skill sections — legacy numbering preserved via rag_contract."""
     _ = history  # reserved for chat route compatibility
 
     current_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S %Z").strip()
-    tl = _topic_line(topic)
+    tl = _topic_line(topic, user_message=user_message)
 
     idx = 1
     excerpts_block = format_source_block_for_prompt(source_items, start_idx=idx)

@@ -59,7 +59,6 @@ async def chat(payload: ChatRequest) -> ChatResponse:
 
     debug: dict[str, Any] = {
         "turn_index": payload.turn_index,
-        "fetch_sources": payload.fetch_sources,
         "input_guardrails": {"action": input_result.action, "flags": input_result.flags},
     }
 
@@ -67,46 +66,53 @@ async def chat(payload: ChatRequest) -> ChatResponse:
     ingest_errors: list[dict[str, Any]] = []
     trusted_api_lines: list[str] = []
     trusted_debug: dict[str, Any] = {}
+    inferred_topic = next((h.strip() for h in payload.history if h.strip()), clean_message.strip())
 
-    if payload.fetch_sources:
-        q = (payload.source_query or payload.topic or clean_message[:120]).strip()
-        debug["ingestion_query"] = q
+    message_for_ingestion = payload.message.strip() or clean_message.strip()
+    q = message_for_ingestion
+    debug["ingestion_query"] = q
+    logger.info(
+        "Chat: Reddit ingestion start query=%r topic=%r turn=%s",
+        q,
+        q,
+        payload.turn_index,
+    )
 
+    try:
+        reddit = RedditIngestionService()
+        r_result = await reddit.search(
+            query=q,
+            topic=q,
+            turn=payload.turn_index,
+            limit=_CHAT_REDDIT_LIMIT,
+            include_top_comments=False,
+            comments_limit=5,
+        )
+        reddit_items = list(r_result.items)
+        reddit_items = rerank_source_contents_by_query(reddit_items, q)
+        for e in r_result.errors:
+            ingest_errors.append({"source": "reddit", "code": e.code, "message": e.message})
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Reddit ingestion in chat failed: %s", exc)
+        ingest_errors.append({"source": "reddit", "code": "exception", "message": str(exc)})
+
+    if reddit_items:
         try:
-            reddit = RedditIngestionService()
-            r_result = await reddit.search(
-                query=q,
-                topic=(payload.topic or "").strip(),
-                turn=payload.turn_index,
-                limit=_CHAT_REDDIT_LIMIT,
-                include_top_comments=False,
-                comments_limit=5,
-            )
-            reddit_items = list(r_result.items)
-            reddit_items = rerank_source_contents_by_query(reddit_items, q)
-            for e in r_result.errors:
-                ingest_errors.append({"source": "reddit", "code": e.code, "message": e.message})
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("Reddit ingestion in chat failed: %s", exc)
-            ingest_errors.append({"source": "reddit", "code": "exception", "message": str(exc)})
-
-        if reddit_items:
-            try:
-                reddit_items[:5] = await guardrails.apply_excerpt_guardrails(reddit_items[:5])
-            except Exception as exc:
-                logger.warning("Guardrails service failed inline: %s", exc)
+            reddit_items[:5] = await guardrails.apply_excerpt_guardrails(reddit_items[:5])
+        except Exception as exc:
+            logger.warning("Guardrails service failed inline: %s", exc)
 
     prompt_items = source_items_for_prompt_from_ingestion(reddit_items)
     sources_out = lightweight_sources_for_response(prompt_items)
 
-    topic_search = payload.topic or clean_message
+    topic_search = inferred_topic
     facts = get_verified_facts_for_topic(topic_search)
 
     if not has_static_kb_for_topic(topic_search):
         try:
             orch = TrustedFactsOrchestrator()
             trusted_api_lines, trusted_refs, trusted_debug = await orch.build_trusted_facts(
-                topic=payload.topic,
+                topic=inferred_topic,
                 message=clean_message,
             )
             sources_out.extend(trusted_refs)
@@ -128,9 +134,10 @@ async def chat(payload: ChatRequest) -> ChatResponse:
             )
 
     system_prompt = build_socratic_system_prompt(
-        topic=payload.topic,
+        topic=None,
         turn_index=payload.turn_index,
         history=payload.history,
+        user_message=inferred_topic,
         source_items=prompt_items,
         facts=facts,
         trusted_api_fact_lines=trusted_api_lines,

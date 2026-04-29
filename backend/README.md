@@ -5,7 +5,7 @@ The backend provides Candid API modules: **Socratic debate chat** (Claude consum
 ## Endpoints
 
 - `GET /health`
-- `POST /api/v1/chat` — body may include `fetch_sources`, `turn_index`, `history`, `topic`, `source_query`; see `app.models.chat.ChatRequest`
+- `POST /api/v1/chat` — body may include `turn_index`, `history`, `source_query`; see `app.models.chat.ChatRequest` (Reddit ingestion runs on every request)
 - `POST /api/v1/ingest/reddit`
 - `GET /api/v1/social-data` — Reddit sample (`topic`, `turn`, optional `q`); vary `turn` for a different Reddit sort/subreddit mix
 
@@ -39,11 +39,11 @@ Canonical prompt assembly lives in **`app/prompts/`** (`builder.build_socratic_s
 
 **Tiered context**
 
-- **Tier 1A:** `knowledge_base.get_verified_facts_for_topic(topic or message)` when the topic matches a curated bucket.
+- **Tier 1A:** `knowledge_base.get_verified_facts_for_topic(...)` using an inferred inquiry focus (first user message in history, or current message) when it matches a curated bucket.
 - **Tier 1B:** `TrustedFactsOrchestrator` calls **World Bank** (always, no key), **FRED** (if `FRED_API_KEY`), **UN Data Portal** (if `UN_DATAPORTAL_BEARER_TOKEN`) **only when Tier 1A returned no facts**, to avoid conflicting numbers. Economy metrics prefer **cross-verified** lines (WB+FRED). Climate uses **two distinct World Bank series** with explicit same-publisher labeling. Population uses **WB+UN** when UN auth is available.
-- **Tier 2:** Optional **`fetch_sources: true`** → Reddit → **BM25 rerank** (`rerank_bm25.py`) → **Stage 2 excerpt guardrails** (classify + **BIAS_RISK** / **MISINFO_RISK** flags + PII scrub) → excerpt block in the system prompt.
+- **Tier 2:** **Always:** Reddit → **BM25 rerank** (`rerank_bm25.py`) → **Stage 2 excerpt guardrails** (classify + **BIAS_RISK** / **MISINFO_RISK** flags + PII scrub) → excerpt block in the system prompt when any items return.
 
-`debug` on chat responses includes **`input_guardrails`**, **`trusted_api`**, **`static_kb_matched`**, **`trusted_api_lines_count`**.
+`debug` on chat responses includes **`ingestion_query`**, **`reddit_item_count`**, **`input_guardrails`**, **`trusted_api`**, **`static_kb_matched`**, **`trusted_api_lines_count`**.
 
 ## Ingestion viability (audit)
 
@@ -58,4 +58,4 @@ From `backend/`:
 ## Limitations / not production-ready
 
 - No conversation persistence; `turn_index` / `history` are client-supplied.
-- No rate limiting or caching on `/chat` with `fetch_sources`.
+- No rate limiting or caching on `/chat` (Reddit runs every request).

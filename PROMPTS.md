@@ -4,6 +4,26 @@ Entries record prompts used for substantial AI-assisted changes (no secrets).
 
 ---
 
+## 2026-04-28 — `feature/ui-minimal-chat-message-driven-topic`
+
+**Prompt (summary):** Remove all developer/sidebar topic UI in frontend; send only message/history/turn_index from client; make backend Reddit query message-driven; remove `topic`/`developer_mode` request flags; add prompt fallback to user message when topic is absent.
+
+**Changes implemented:** Rebuilt `frontend/src/components/ChatShell.jsx` as message-thread + composer only; removed topic/developer payload fields; removed `topic` from `ChatRequest`; updated chat route to call Reddit with message-derived query/topic and infer inquiry focus from user messages; extended prompt builder topic fallback via `user_message`; updated tests and READMEs.
+
+**Branch:** `feature/ui-minimal-chat-message-driven-topic`
+
+---
+
+## 2026-04-28 — `feature/reddit-always-on`
+
+**Prompt (summary):** Make Reddit ingestion mandatory — remove frontend toggle and `fetch_sources` (and related) from chat payload and `ChatRequest`; always call Reddit in `chat.py`; remove debug UI tied to modes; verify logging/tests.
+
+**Changes implemented:** Removed `fetch_sources` from `ChatRequest` and `ChatShell`; unconditional Reddit search + BM25 + excerpt guardrails path; `logger.info` on each ingestion; default Reddit stub in `conftest.py`; tests/README/PROMPTS updates.
+
+**Branch:** `feature/reddit-always-on`
+
+---
+
 ## 2026-04-28 — `feature/guardrails-three-stage`
 
 **Prompt (summary):** Refactor `guardrails.py` into a three-stage pipeline: rule-based input guardrails before Reddit/Claude; LLM-based excerpt labeling with bias/misinformation risk flags on `SourceContent`; rule-based output guardrails after Claude; wire `chat.py`.

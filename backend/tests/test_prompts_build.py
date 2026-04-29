@@ -67,6 +67,18 @@ def test_turn_three_includes_persona_taxonomy() -> None:
     assert "SECTION 4 — PERSONA TAXONOMY" in sp
 
 
+def test_topic_line_falls_back_to_user_message() -> None:
+    sp = build_socratic_system_prompt(
+        topic=None,
+        user_message="Why are housing costs increasing?",
+        turn_index=1,
+        source_items=[],
+        facts=[],
+        trusted_api_fact_lines=None,
+    )
+    assert "Why are housing costs increasing?" in sp
+
+
 def test_reddit_rules_only_when_sources_and_turn_positive() -> None:
     item = {"source": "reddit", "url": "http://example.com", "excerpt": "hello"}
     z = build_socratic_system_prompt(
