@@ -5,7 +5,6 @@ from pydantic import BaseModel, Field
 
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=100_000)
-    topic: str | None = Field(default=None, max_length=200)
     conversation_id: str | None = None
     """Increment per user-assistant exchange for escalation rules (client-supplied until persistence exists)."""
 
@@ -14,14 +13,10 @@ class ChatRequest(BaseModel):
 
     history: list[str] = Field(default_factory=list, max_length=20)
 
-    fetch_sources: bool = Field(
-        default=False,
-        description="If true, backend runs Reddit ingestion before calling the LLM.",
-    )
     source_query: str | None = Field(
         default=None,
         max_length=200,
-        description="Override query for ingestion; defaults to topic or truncated message.",
+        description="Optional ingestion query override for advanced callers.",
     )
 
 

@@ -7,7 +7,7 @@ from app.services.scrapers.reddit_service import RedditIngestionService
 from app.services.safety.guardrails import GuardrailsService
 
 
-def test_chat_fetch_sources_reranks_and_calls_guardrails(monkeypatch) -> None:
+def test_chat_reddit_reranks_and_calls_guardrails(monkeypatch) -> None:
     items = [
         SourceContent(
             source="reddit",
@@ -51,11 +51,10 @@ def test_chat_fetch_sources_reranks_and_calls_guardrails(monkeypatch) -> None:
         "/api/v1/chat",
         json={
             "message": "What drives inflation today?",
-            "fetch_sources": True,
             "source_query": "inflation CPI federal reserve",
         },
     )
     assert response.status_code == 200
     dbg = response.json()["debug"]
     assert dbg.get("reddit_item_count") == 2
-    assert dbg.get("fetch_sources") is True
+    assert dbg.get("ingestion_query") == "What drives inflation today?"

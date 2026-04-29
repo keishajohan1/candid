@@ -1,6 +1,6 @@
 # Frontend (React + Vite)
 
-Minimal **ChatGPT-style layout** for local testing: sidebar, message thread, composer, and a small **debug** panel (mode, source counts, ingest errors).
+Minimal **chat layout** for local testing: message thread and composer only.
 
 ## Prerequisites
 
@@ -27,8 +27,7 @@ npm run dev
 
 ## UI behavior
 
-- **Topic** — optional; sent as `topic` to `/chat`.
-- **Fetch Reddit excerpts** — sets `fetch_sources: true` (may be slow; depends on Reddit availability).
+- **Reddit** — the backend runs Reddit ingestion on every chat request; there is no client toggle.
 - **turn_index** — derived from the number of assistant messages in the thread (+1 for next turn), sent to the backend for escalation rules.
 
 ## Backend requirements

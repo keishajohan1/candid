@@ -5,13 +5,14 @@ The project is designed to guide users through facts, sources, and multiple pers
 
 ## Technology stack
 
-- **Backend:** Python 3.11+, FastAPI, Uvicorn, Anthropic SDK, httpx, Pydantic, rank-bm25 (BM25 rerank), pytest / pytest-cov.
+- **Backend:** Python 3.11+, FastAPI, Uvicorn, Anthropic SDK, httpx, Pydantic, rank-bm25 (BM25 rerank), LangChain ecosystem (including `langchain-text-splitters`), pytest / pytest-cov.
 - **Frontend:** React, Vite.
 - **Trusted data APIs (Tier 1B):** World Bank Indicators API v2 (no key), FRED (optional API key), UN Population Data Portal `data` routes (optional Bearer token).
 
 ## Repository layout
 
 - `backend/` FastAPI API server, service modules, tests, and backend container image.
+- `backend/app/prompts/` modular Socratic prompt skills (`builder.py`, `skills/`, `formatters.py`, `user_content.py`); `backend/app/utils/prompts.py` compatibility re-exports (see `backend/README.md`).
 - `backend/app/services/trusted_data/` Tier 1B trusted API orchestration (World Bank, optional FRED, optional UN bearer).
 - `frontend/` React + Vite web client scaffold.
 - `docs/` future architecture, product, and operations docs.
@@ -27,7 +28,7 @@ The project is designed to guide users through facts, sources, and multiple pers
 
 - `GET /health` returns service status and runtime metadata.
 - `POST /api/v1/chat` calls Anthropic when `ANTHROPIC_API_KEY` is set in `backend/.env` (required for the app to start).
-- Chat uses a **tiered RAG contract** in the system prompt: **Tier 1A** static facts (`knowledge_base.py`) when the topic matches; **Tier 1B** live **World Bank** + optional **FRED** / **UN Data Portal** facts only when Tier 1A is empty, with **cross-verification** where two independent providers apply; **Tier 2** Reddit excerpts when `fetch_sources` is true, **BM25-reranked** before guardrails.
+- Chat uses a **tiered RAG contract** in the system prompt: **Tier 1A** static facts (`knowledge_base.py`) when the topic matches; **Tier 1B** live **World Bank** + optional **FRED** / **UN Data Portal** facts only when Tier 1A is empty, with **cross-verification** where two independent providers apply; **Tier 2** Reddit excerpts on **every** chat request (**Reddit ingestion** → **BM25 rerank** → **Stage 2 excerpt guardrails**: bias/misinformation hints + scrub). Before ingestion and Claude: moderation precheck plus **Stage 1 input guardrails** (rules); after Claude: **Stage 3 output guardrails**. Successful responses may include **`debug.input_guardrails`** and **`debug.ingestion_query`**.
 
 ## Local development (no virtual environment workflow)
 
@@ -85,8 +86,8 @@ From `backend/` run `pytest` (see `backend/pytest.ini` and `backend/.coveragerc`
 
 ## Implementation status (high level)
 
-- **Done:** Health, chat (Claude), Reddit ingest + social-data, moderation precheck, excerpt guardrails, static KB, Tier 1B trusted APIs (WB + optional FRED/UN), cross-verified fact lines, BM25 Reddit rerank, tiered prompt contract.
-- **Pending / stub:** Chroma vector RAG (`chroma_client.py`), durable sessions, auth, full safety policy beyond keyword precheck.
+- **Done:** Health, chat (Claude), Reddit ingest + social-data (chat **always** runs Reddit search before Claude), moderation precheck, three-stage guardrails (input rules, excerpt LLM with bias/misinfo flags on excerpts, output rules), static KB, Tier 1B trusted APIs (WB + optional FRED/UN), cross-verified fact lines, BM25 Reddit rerank, tiered prompt contract.
+- **Pending / stub:** Chroma vector RAG (`chroma_client.py`), durable sessions, auth, richer safety evaluation beyond current rules + excerpt classifier.
 
 ## Roadmap placeholders intentionally stubbed
 

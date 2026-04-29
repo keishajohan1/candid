@@ -202,7 +202,7 @@ class EvalRunner:
     async def _call_agent(self, scenario: EvalScenario) -> tuple[str, str, dict]:
         """Build the Candid system prompt and call the Guided Inquiry Engine."""
         from app.services.knowledge_base import get_verified_facts_for_topic
-        from app.utils.prompts import (
+        from app.prompts import (
             build_socratic_system_prompt,
             build_socratic_user_content,
         )

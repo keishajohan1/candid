@@ -17,6 +17,7 @@ langsmith
 langchain-huggingface
 sentence-transformers
 langchain-community
+langchain-text-splitters
 langgraph
 beautifulsoup4
 pypdf
