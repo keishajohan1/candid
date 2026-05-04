@@ -2,8 +2,7 @@ from typing import Any
 import time
 
 from langchain_anthropic import ChatAnthropic
-from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
-from langgraph.prebuilt import create_react_agent
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage
 
 from app.core.config import settings
 from app.services.tools import search_verified_knowledge
@@ -36,35 +35,38 @@ class ClaudeService:
         messages = [SystemMessage(content=system_content)]
         
         if history:
-            if len(history) > 10:
-                old_history = "\n".join(history[:-10])
-                summary_prompt = f"Summarize the following conversation history:\n{old_history}"
-                summary = await self._llm.ainvoke([HumanMessage(content=summary_prompt)])
-                messages[0] = SystemMessage(content=f"{messages[0].content}\n\nSummary of older conversation:\n{summary.content}")
-                recent_history = history[-10:]
-            else:
-                recent_history = history
+            # Truncate history to avoid latency
+            recent_history = history[-10:] if len(history) > 10 else history
                 
             for msg in recent_history:
                 messages.append(HumanMessage(content=msg))
                 
-        # --- Ecosystem Scaffold: Planner ---
-        plan_prompt = f"Briefly outline a 2-step plan to answer this query based on the system instructions. Do not answer it yet: {user_content}"
-        plan_result = await self._llm.ainvoke([HumanMessage(content=plan_prompt)])
-        messages[0] = SystemMessage(content=f"{messages[0].content}\n\n[PLANNER STRATEGY]:\n{plan_result.content}")
-                
         messages.append(HumanMessage(content=user_content))
         
-        # --- Ecosystem Scaffold: Fallback Handlers ---
-        agent = create_react_agent(self._llm, tools=self._tools)
+        # --- Native Langchain Tool Calling ---
+        llm_with_tools = self._llm.bind_tools(self._tools)
         
         try:
-            result = await agent.ainvoke({"messages": messages})
-            last_message = result["messages"][-1]
-            response_text = last_message.content
-            tools_used = sum(1 for m in result["messages"] if hasattr(m, 'type') and m.type == "tool")
+            response = await llm_with_tools.ainvoke(messages)
+            tools_used = 0
+            
+            if response.tool_calls:
+                messages.append(response)
+                tool_map = {t.name: t for t in self._tools}
+                
+                for tool_call in response.tool_calls:
+                    tool = tool_map.get(tool_call["name"])
+                    if tool:
+                        tool_msg = await tool.ainvoke(tool_call)
+                        messages.append(tool_msg)
+                        tools_used += 1
+                
+                final_response = await self._llm.ainvoke(messages)
+                response_text = final_response.content
+            else:
+                response_text = response.content
         except Exception as e:
-            # Fallback handler if agent tool schema fails or rejects query
+            # Fallback handler if native tools fail
             fallback_response = await self._llm.ainvoke(messages)
             response_text = fallback_response.content
             tools_used = 0
@@ -81,7 +83,7 @@ class ClaudeService:
                 "latency_ms": latency_ms
             },
             "reflection": {
-                "note": "Response orchestrated by LangGraph create_react_agent.",
+                "note": "Response orchestrated by native Langchain bind_tools.",
                 "tools_used": tools_used
             },
         }

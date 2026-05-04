@@ -113,7 +113,6 @@ async def chat(payload: ChatRequest) -> ChatResponse:
     system_prompt = build_socratic_system_prompt(
         topic=payload.topic,
         turn_index=payload.turn_index,
-        history=payload.history,
         source_items=prompt_items,
         facts=facts,
         trusted_api_fact_lines=trusted_api_lines,
@@ -124,6 +123,7 @@ async def chat(payload: ChatRequest) -> ChatResponse:
     result = await claude_service.generate_socratic_response(
         system_prompt=system_prompt,
         user_content=user_content,
+        history=payload.history,
         sources_for_client=sources_out,
     )
 
