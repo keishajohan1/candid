@@ -105,9 +105,123 @@ jobs:
     needs: [backend-tests, frontend-build, ai-eval]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+    env:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ secrets.GCP_REGION }}
+      ARTIFACT_REGISTRY_REPO: ${{ secrets.ARTIFACT_REGISTRY_REPO }}
+      BACKEND_SERVICE: candid-backend
+      FRONTEND_SERVICE: candid-frontend
+      IMAGE_TAG: ${{ github.sha }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy to Google Cloud
-        run: echo "Deployment step — configure after Google Cloud is set up"
+      - name: Validate deploy configuration
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          GSM_ANTHROPIC_SECRET: ${{ secrets.GSM_ANTHROPIC_SECRET }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLOUDRUN_RUNTIME_SA: ${{ secrets.CLOUDRUN_RUNTIME_SA }}
+        run: |
+          set -euo pipefail
+          missing=0
+          for name in GCP_PROJECT_ID GCP_REGION ARTIFACT_REGISTRY_REPO; do
+            eval "v=\${$name:-}"
+            if [ -z "${v}" ]; then echo "::error::Missing required GitHub secret: $name"; missing=1; fi
+          done
+          if [ -z "${GCP_SA_KEY:-}" ]; then echo "::error::Missing required GitHub secret: GCP_SA_KEY (deployer service account JSON)"; missing=1; fi
+          if [ -z "${GSM_ANTHROPIC_SECRET:-}" ] && [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+            echo "::error::Set either GitHub secret GSM_ANTHROPIC_SECRET (Secret Manager secret id, e.g. anthropic-api-key) or ANTHROPIC_API_KEY (plain value for Cloud Run env)."
+            missing=1
+          fi
+          if [ -n "${GSM_ANTHROPIC_SECRET:-}" ] && [ -z "${CLOUDRUN_RUNTIME_SA:-}" ]; then
+            echo "::error::When using GSM_ANTHROPIC_SECRET, set GitHub secret CLOUDRUN_RUNTIME_SA to the Cloud Run runtime service account email (must have roles/secretmanager.secretAccessor on that secret)."
+            missing=1
+          fi
+          if [ "$missing" -ne 0 ]; then exit 1; fi
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev" --quiet
+
+      - name: Build and push backend image
+        run: |
+          set -euo pipefail
+          REGISTRY="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${ARTIFACT_REGISTRY_REPO}"
+          BACKEND_IMAGE="${REGISTRY}/${BACKEND_SERVICE}:${IMAGE_TAG}"
+          docker build -f backend/Dockerfile -t "${BACKEND_IMAGE}" .
+          docker push "${BACKEND_IMAGE}"
+          echo "BACKEND_IMAGE=${BACKEND_IMAGE}" >> "$GITHUB_ENV"
+
+      - name: Deploy backend to Cloud Run
+        env:
+          GSM_ANTHROPIC_SECRET: ${{ secrets.GSM_ANTHROPIC_SECRET }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLOUDRUN_RUNTIME_SA: ${{ secrets.CLOUDRUN_RUNTIME_SA }}
+        run: |
+          set -euo pipefail
+          ARGS=(
+            run deploy "${BACKEND_SERVICE}"
+            --image "${BACKEND_IMAGE}"
+            --region "${GCP_REGION}"
+            --platform managed
+            --allow-unauthenticated
+            --port 8080
+            --quiet
+          )
+          if [ -n "${CLOUDRUN_RUNTIME_SA:-}" ]; then
+            ARGS+=(--service-account "${CLOUDRUN_RUNTIME_SA}")
+          fi
+          if [ -n "${GSM_ANTHROPIC_SECRET:-}" ]; then
+            ARGS+=(--set-secrets "ANTHROPIC_API_KEY=${GSM_ANTHROPIC_SECRET}:latest")
+          else
+            ARGS+=(--set-env-vars "ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}")
+          fi
+          gcloud "${ARGS[@]}"
+
+      - name: Capture backend URL
+        run: |
+          set -euo pipefail
+          BACKEND_URL=$(gcloud run services describe "${BACKEND_SERVICE}" --region "${GCP_REGION}" --format='value(status.url)')
+          echo "BACKEND_URL=${BACKEND_URL}" >> "$GITHUB_ENV"
+
+      - name: Build and push frontend image
+        run: |
+          set -euo pipefail
+          REGISTRY="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${ARTIFACT_REGISTRY_REPO}"
+          API_BASE="${BACKEND_URL}/api/v1"
+          FRONTEND_IMAGE="${REGISTRY}/${FRONTEND_SERVICE}:${IMAGE_TAG}"
+          docker build -f frontend/Dockerfile --build-arg "VITE_API_BASE_URL=${API_BASE}" -t "${FRONTEND_IMAGE}" .
+          docker push "${FRONTEND_IMAGE}"
+          echo "FRONTEND_IMAGE=${FRONTEND_IMAGE}" >> "$GITHUB_ENV"
+
+      - name: Deploy frontend to Cloud Run
+        run: |
+          set -euo pipefail
+          gcloud run deploy "${FRONTEND_SERVICE}" \
+            --image "${FRONTEND_IMAGE}" \
+            --region "${GCP_REGION}" \
+            --platform managed \
+            --allow-unauthenticated \
+            --port 80 \
+            --quiet
+
+      - name: Point backend CORS at frontend URL
+        run: |
+          set -euo pipefail
+          FRONTEND_URL=$(gcloud run services describe "${FRONTEND_SERVICE}" --region "${GCP_REGION}" --format='value(status.url)')
+          gcloud run services update "${BACKEND_SERVICE}" \
+            --region "${GCP_REGION}" \
+            --update-env-vars "FRONTEND_ORIGIN=${FRONTEND_URL}" \
+            --quiet
