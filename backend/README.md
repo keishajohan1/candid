@@ -43,6 +43,8 @@ Canonical prompt assembly lives in **`app/prompts/`** (`builder.build_socratic_s
 - **Tier 1B:** `TrustedFactsOrchestrator` calls **World Bank** (always, no key), **FRED** (if `FRED_API_KEY`), **UN Data Portal** (if `UN_DATAPORTAL_BEARER_TOKEN`) **only when Tier 1A returned no facts**, to avoid conflicting numbers. Economy metrics prefer **cross-verified** lines (WB+FRED). Climate uses **two distinct World Bank series** with explicit same-publisher labeling. Population uses **WB+UN** when UN auth is available.
 - **Tier 2:** **Always:** Reddit → **BM25 rerank** (`rerank_bm25.py`) → **Stage 2 excerpt guardrails** (classify + **BIAS_RISK** / **MISINFO_RISK** flags + PII scrub) → excerpt block in the system prompt when any items return.
 
+**Main Claude call (`ClaudeService`):** When Tier 1A returned at least one fact, LangChain **`bind_tools`** / **`search_verified_knowledge`** is skipped (facts are already in the system prompt). Otherwise the optional Chroma tool may run; multiple tool calls are executed concurrently. **`get_rag_retriever()`** is initialized once at app startup to reduce first-request latency.
+
 `debug` on chat responses includes **`ingestion_query`**, **`reddit_item_count`**, **`input_guardrails`**, **`trusted_api`**, **`static_kb_matched`**, **`trusted_api_lines_count`**.
 
 ## Ingestion viability (audit)

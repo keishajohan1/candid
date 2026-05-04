@@ -14,14 +14,22 @@ import pytest
 
 
 @pytest.fixture(autouse=True)
-def _patch_claude_api(monkeypatch: pytest.MonkeyPatch) -> None:
+def _patch_claude_api(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest) -> None:
+    """Stub Claude for integration-style tests; unit tests for ClaudeService opt out."""
+    if "test_claude_service" in request.node.nodeid:
+        return
+
     async def fake_generate(
         self,
         *,
         system_prompt: str,
         user_content: str,
         sources_for_client: list,
+        history: list | None = None,
+        allow_verified_knowledge_tool: bool = True,
+        **kwargs: object,
     ):
+        _ = (system_prompt, user_content, history, allow_verified_knowledge_tool, kwargs)
         return {
             "response_text": "Test assistant reply.",
             "mode": "live",

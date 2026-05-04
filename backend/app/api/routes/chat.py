@@ -161,11 +161,13 @@ async def chat(payload: ChatRequest) -> ChatResponse:
     user_content = build_socratic_user_content(message=clean_message)
 
     claude_service = ClaudeService()
+    allow_kb_tool = len(facts) == 0
     result = await claude_service.generate_socratic_response(
         system_prompt=system_prompt,
         user_content=user_content,
         history=payload.history,
         sources_for_client=sources_out,
+        allow_verified_knowledge_tool=allow_kb_tool,
     )
 
     response_text = guardrails.apply_output_guardrails(result["response_text"])

@@ -160,7 +160,7 @@ def test_chat_trusted_orchestrator_exception_sets_debug(monkeypatch) -> None:
 def test_chat_llm_sources_tag_appends_kb_sources(monkeypatch) -> None:
     from app.services.claude_service import ClaudeService
 
-    async def fake_gen(_self, *, system_prompt, user_content, sources_for_client):
+    async def fake_gen(_self, *, system_prompt, user_content, sources_for_client, **_kwargs):
         return {
             "response_text": 'Ack.\n<sources>\n[4] - OECD Economic Outlook\n</sources>',
             "mode": "live",
@@ -180,7 +180,7 @@ def test_chat_llm_sources_tag_appends_kb_sources(monkeypatch) -> None:
 def test_chat_dynamic_sources_marker_appends_kb_sources(monkeypatch) -> None:
     from app.services.claude_service import ClaudeService
 
-    async def fake_gen(_self, *, system_prompt, user_content, sources_for_client):
+    async def fake_gen(_self, *, system_prompt, user_content, sources_for_client, **_kwargs):
         return {
             "response_text": "Intro.\nDYNAMIC_SOURCES:\n[5] - Other Study Name\n",
             "mode": "live",
