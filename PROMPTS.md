@@ -191,3 +191,20 @@ Entries record prompts used for substantial AI-assisted changes (no secrets).
 **Changes implemented:** `ClaudeService.generate_socratic_response(..., allow_verified_knowledge_tool=...)`; `chat.py` sets `allow_verified_knowledge_tool=(len(facts)==0)`; parallel tool branch; `main.py` lifespan calls `get_rag_retriever()`; `tests/test_claude_service.py`; conftest skips global Claude stub for that module and extends `fake_generate` kwargs; `test_chat.py` fakes accept `**_kwargs`; README note.
 
 **Branch:** `feature/claude-kb-tool-skip-warmup`
+## 2026-05-03 — `feature/chat-parallel-gather`
+
+**Prompt (summary):** In `backend/app/api/routes/chat.py`, run Reddit ingestion and Tier-1 facts + trusted API orchestration in parallel with `asyncio.gather`; place `apply_excerpt_guardrails` as the next `await` after `gather` (no extra awaits in between); keep prompt assembly then main Claude call; no `sleep`; do not edit `reddit_service.py` or `guardrails.py`; report before/after `await` order.
+
+**Changes implemented:** Added `import asyncio`; wrapped Reddit search + rerank in `_reddit_ingest()` and `get_verified_facts_for_topic` + conditional `await TrustedFactsOrchestrator.build_trusted_facts` in `_facts_and_trusted()`; `await asyncio.gather(...)` then excerpt guardrails, `sources_out.extend(trusted_refs)`, fact labels, `build_socratic_system_prompt` / user content, `await generate_socratic_response`.
+
+**Branch:** `feature/chat-parallel-gather`
+
+---
+
+## 2026-05-04 — `feature/prompt-tier2-cap`
+
+**Prompt (summary):** Reduce system prompt growth from Reddit Tier 2: cap injected excerpts to 3 from turn 1+; truncate each excerpt body to 200 chars in `format_source_block_for_prompt`; at turn 0 inject zero Reddit excerpts (empty Tier 2 list); keep all skill sections and behavioral rules; report approximate assembled prompt length at turn 0 vs turn 3.
+
+**Changes implemented:** `builder.py` — `tier2_items` empty when `turn_index == 0`, else `source_items[:3]`; `formatters.py` excerpt cap 400→200 chars; tests for turn-0 omission, three-item cap, truncation assertion; measured sample prompt ~8,866 chars (turn 0) vs ~27,124 chars (turn 3) with two static facts and three long Reddit excerpts.
+
+**Branch:** `feature/prompt-tier2-cap`
