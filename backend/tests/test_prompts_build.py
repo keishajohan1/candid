@@ -40,6 +40,8 @@ def test_turn_zero_uses_first_turn_interaction_skips_cognitive_and_persona() -> 
     assert "FIRST MESSAGE ONLY" in sp
     assert "SECTION 2 — COGNITIVE EXECUTION PROTOCOL" not in sp
     assert "SECTION 4 — PERSONA TAXONOMY" not in sp
+    assert "http://example.com" not in sp
+    assert "No social media excerpts were supplied for this turn." in sp
 
 
 def test_turn_two_includes_cognitive_skips_persona_without_reddit_rules_on_turn_zero_guard() -> (
@@ -77,6 +79,25 @@ def test_topic_line_falls_back_to_user_message() -> None:
         trusted_api_fact_lines=None,
     )
     assert "Why are housing costs increasing?" in sp
+
+
+def test_turn_three_caps_tier2_sources_to_three_in_prompt() -> None:
+    items = [
+        {"source": "reddit", "url": f"http://u{i}.com", "excerpt": str(i)}
+        for i in range(5)
+    ]
+    sp = build_socratic_system_prompt(
+        topic=None,
+        turn_index=3,
+        source_items=items,
+        facts=[],
+        trusted_api_fact_lines=None,
+    )
+    assert "http://u0.com" in sp
+    assert "http://u1.com" in sp
+    assert "http://u2.com" in sp
+    assert "http://u3.com" not in sp
+    assert "http://u4.com" not in sp
 
 
 def test_reddit_rules_only_when_sources_and_turn_positive() -> None:
