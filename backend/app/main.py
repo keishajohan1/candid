@@ -9,6 +9,7 @@ from app.api.routes.ingest import router as ingest_router
 from app.api.routes.social_data import router as social_data_router
 from app.core.config import log_env_debug_status, settings
 from app.core.logging import configure_logging
+from app.services.knowledge_base import get_rag_retriever
 
 configure_logging(settings.log_level)
 log_env_debug_status()
@@ -18,6 +19,8 @@ log_env_debug_status()
 async def lifespan(_app: FastAPI):
     if not settings.anthropic_api_key or not settings.anthropic_api_key.strip():
         raise RuntimeError("ANTHROPIC_API_KEY is required and not set")
+    # Warm Chroma + embedding model so the first chat request does not pay full cold-start cost.
+    get_rag_retriever()
     yield
 
 

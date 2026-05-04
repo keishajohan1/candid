@@ -181,3 +181,13 @@ Entries record prompts used for substantial AI-assisted changes (no secrets).
 **Changes implemented:** Added `trusted_data/` (WB + FRED + optional UN bearer clients, `cross_verify`, `TrustedFactsOrchestrator`), `rerank_bm25` for Reddit, `has_static_kb_for_topic`, extended `build_socratic_system_prompt` + RAG contract / RULE 8, wired `chat.py` with debug fields, `rank-bm25` dependency, tests, `backend/.coveragerc` + `pytest.ini`, README and `.env.example` updates.
 
 **Branch:** `feature/tiered-trusted-rag-rerank`
+
+---
+
+## 2026-05-05 — `feature/claude-kb-tool-skip-warmup`
+
+**Prompt (summary):** Implement performance improvements (1) skip LangChain `search_verified_knowledge` when Tier 1A facts already in system prompt, (2) run multiple tool invocations in parallel with `asyncio.gather`, (3) warm `get_rag_retriever()` at FastAPI startup.
+
+**Changes implemented:** `ClaudeService.generate_socratic_response(..., allow_verified_knowledge_tool=...)`; `chat.py` sets `allow_verified_knowledge_tool=(len(facts)==0)`; parallel tool branch; `main.py` lifespan calls `get_rag_retriever()`; `tests/test_claude_service.py`; conftest skips global Claude stub for that module and extends `fake_generate` kwargs; `test_chat.py` fakes accept `**_kwargs`; README note.
+
+**Branch:** `feature/claude-kb-tool-skip-warmup`
