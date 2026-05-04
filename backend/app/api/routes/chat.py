@@ -148,6 +148,7 @@ async def chat(payload: ChatRequest) -> ChatResponse:
     result = await claude_service.generate_socratic_response(
         system_prompt=system_prompt,
         user_content=user_content,
+        history=payload.history,
         sources_for_client=sources_out,
     )
 
