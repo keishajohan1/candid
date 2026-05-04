@@ -133,8 +133,7 @@ export default function ChatShell() {
   const [loadingState, setLoadingState] = useState(null);
   const loading = loadingState !== null;
   const [error, setError] = useState("");
-  const [fetchSources, setFetchSources] = useState(false);
-  const [devMode, setDevMode] = useState(false);
+  const [devMode] = useState(false);
   const [lastDebug, setLastDebug] = useState(null);
   const listEndRef = useRef(null);
   const textareaRef = useRef(null);
@@ -185,7 +184,7 @@ export default function ChatShell() {
 
     const readTimer = setTimeout(() => {
       setLoadingState("thinking");
-    }, fetchSources ? 2500 : 800);
+    }, 2500);
 
     try {
       const data = await sendChatMessage({
@@ -193,7 +192,7 @@ export default function ChatShell() {
         topic: topic.trim() || null,
         turn_index: turnIndex,
         history: userHistory,
-        fetch_sources: fetchSources,
+        fetch_sources: true,
       });
 
       setLastDebug({
@@ -319,36 +318,8 @@ export default function ChatShell() {
         <div className="sidebar-footer">
           {devMode && (
             <div className="dev-mode-panel">
-              <p className="sidebar-hint">Local test UI — Socratic debate mode</p>
-              <label className="sidebar-label">
-                Topic (optional)
-                <input
-                  type="text"
-                  value={topic}
-                  onChange={(e) => setTopic(e.target.value)}
-                  placeholder="e.g. climate policy"
-                />
-              </label>
-              <label className="sidebar-check">
-                <input
-                  type="checkbox"
-                  checked={fetchSources}
-                  onChange={(e) => setFetchSources(e.target.checked)}
-                />
-                Fetch Reddit excerpts for the prompt (may be slow)
-              </label>
-              <p className="sidebar-meta">Next turn_index: {turnIndex}</p>
             </div>
           )}
-
-          <label className="sidebar-check" style={{ color: "#9c8c72" }}>
-            <input
-              type="checkbox"
-              checked={devMode}
-              onChange={(e) => setDevMode(e.target.checked)}
-            />
-            Developer Mode
-          </label>
 
           <div className="sidebar-legal-footer">
             No position is taken or endorsed. All responses draw from verified sources and filtered public discourse.

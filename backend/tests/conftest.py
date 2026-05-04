@@ -32,3 +32,18 @@ def _patch_claude_api(monkeypatch: pytest.MonkeyPatch) -> None:
     from app.services.claude_service import ClaudeService
 
     monkeypatch.setattr(ClaudeService, "generate_socratic_response", fake_generate)
+
+
+@pytest.fixture(autouse=True)
+def _patch_reddit_search_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Every chat request runs Reddit ingestion; avoid live HTTP in unit tests."""
+
+    async def empty_search(self, **kwargs):  # noqa: ARG001
+        from app.models.ingest import IngestResponse
+
+        q = kwargs.get("query") or ""
+        return IngestResponse(source="reddit", query=q, items=[], count=0, errors=[])
+
+    from app.services.scrapers.reddit_service import RedditIngestionService
+
+    monkeypatch.setattr(RedditIngestionService, "search", empty_search)

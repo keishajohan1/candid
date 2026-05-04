@@ -1,4 +1,7 @@
-"""Backward-compatible imports — canonical modular prompts live in ``app.prompts``."""
+"""
+Compatibility barrel — canonical implementations live in ``app.prompts``.
+Routes may import from ``app.core.prompts`` or ``app.prompts`` interchangeably.
+"""
 
 from app.prompts import (
     build_socratic_system_prompt,
