@@ -41,9 +41,14 @@ def build_socratic_system_prompt(
     current_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S %Z").strip()
     tl = _topic_line(topic, user_message=user_message)
 
+    if turn_index == 0:
+        tier2_items: list[dict[str, Any]] = []
+    else:
+        tier2_items = source_items[:3]
+
     idx = 1
-    excerpts_block = format_source_block_for_prompt(source_items, start_idx=idx)
-    idx += len(source_items)
+    excerpts_block = format_source_block_for_prompt(tier2_items, start_idx=idx)
+    idx += len(tier2_items)
 
     rag_body = get_rag_contract_skill(facts, trusted_api_fact_lines, idx_start=idx)
 
@@ -63,7 +68,7 @@ def build_socratic_system_prompt(
 
     sections.append(build_hard_rules_section(excerpts_block))
 
-    inject_reddit = bool(source_items) and turn_index > 0
+    inject_reddit = bool(tier2_items) and turn_index > 0
     if inject_reddit:
         sections.append(REDDIT_HANDLER_SKILL)
 

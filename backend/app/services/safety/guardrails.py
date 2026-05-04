@@ -139,6 +139,8 @@ class GuardrailsService:
         if not items:
             return []
 
+        items = items[:5]
+
         for item in items:
             item.author = "[ANONYMIZED USER]"
 
@@ -168,7 +170,7 @@ class GuardrailsService:
         try:
             result = await self._client.messages.create(
                 model=settings.claude_model,
-                max_tokens=2000,
+                max_tokens=300,
                 temperature=0.0,
                 messages=[{"role": "user", "content": prompt}],
             )

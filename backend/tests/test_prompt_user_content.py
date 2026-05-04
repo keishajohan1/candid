@@ -29,6 +29,8 @@ def test_format_source_block_truncates_long_excerpt() -> None:
     items = [{"source": "reddit", "url": "", "excerpt": long_text}]
     out = format_source_block_for_prompt(items)
     assert "…" in out
+    assert "x" * 200 in out
+    assert "x" * 201 not in out
 
 
 def test_source_items_minimal_model() -> None:
