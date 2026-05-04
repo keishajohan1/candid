@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import re
 from typing import Any
@@ -78,23 +79,54 @@ async def chat(payload: ChatRequest) -> ChatResponse:
         payload.turn_index,
     )
 
-    try:
-        reddit = RedditIngestionService()
-        r_result = await reddit.search(
-            query=q,
-            topic=q,
-            turn=payload.turn_index,
-            limit=_CHAT_REDDIT_LIMIT,
-            include_top_comments=False,
-            comments_limit=5,
-        )
-        reddit_items = list(r_result.items)
-        reddit_items = rerank_source_contents_by_query(reddit_items, q)
-        for e in r_result.errors:
-            ingest_errors.append({"source": "reddit", "code": e.code, "message": e.message})
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("Reddit ingestion in chat failed: %s", exc)
-        ingest_errors.append({"source": "reddit", "code": "exception", "message": str(exc)})
+    topic_search = inferred_topic
+
+    async def _reddit_ingest() -> tuple[list[Any], list[dict[str, Any]]]:
+        items: list[Any] = []
+        errs: list[dict[str, Any]] = []
+        try:
+            reddit = RedditIngestionService()
+            r_result = await reddit.search(
+                query=q,
+                topic=q,
+                turn=payload.turn_index,
+                limit=_CHAT_REDDIT_LIMIT,
+                include_top_comments=False,
+                comments_limit=5,
+            )
+            items = list(r_result.items)
+            items = rerank_source_contents_by_query(items, q)
+            for e in r_result.errors:
+                errs.append({"source": "reddit", "code": e.code, "message": e.message})
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Reddit ingestion in chat failed: %s", exc)
+            errs.append({"source": "reddit", "code": "exception", "message": str(exc)})
+        return items, errs
+
+    async def _facts_and_trusted() -> tuple[list[str], list[str], list[dict[str, Any]], dict[str, Any]]:
+        facts_local = get_verified_facts_for_topic(topic_search)
+        trusted_lines: list[str] = []
+        trusted_refs: list[dict[str, Any]] = []
+        trusted_debug: dict[str, Any] = {}
+        if not has_static_kb_for_topic(topic_search):
+            try:
+                orch = TrustedFactsOrchestrator()
+                trusted_lines, trusted_refs, trusted_debug = await orch.build_trusted_facts(
+                    topic=inferred_topic,
+                    message=clean_message,
+                )
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Trusted API orchestration failed: %s", exc)
+                trusted_debug = {"trusted_api_error": str(exc)}
+        else:
+            trusted_debug = {"trusted_api_skipped": True, "trusted_api_reason": "static_kb_matched"}
+        return facts_local, trusted_lines, trusted_refs, trusted_debug
+
+    (reddit_items, reddit_errs), (facts, trusted_api_lines, trusted_refs, trusted_debug) = await asyncio.gather(
+        _reddit_ingest(),
+        _facts_and_trusted(),
+    )
+    ingest_errors.extend(reddit_errs)
 
     if reddit_items:
         try:
@@ -104,23 +136,7 @@ async def chat(payload: ChatRequest) -> ChatResponse:
 
     prompt_items = source_items_for_prompt_from_ingestion(reddit_items)
     sources_out = lightweight_sources_for_response(prompt_items)
-
-    topic_search = inferred_topic
-    facts = get_verified_facts_for_topic(topic_search)
-
-    if not has_static_kb_for_topic(topic_search):
-        try:
-            orch = TrustedFactsOrchestrator()
-            trusted_api_lines, trusted_refs, trusted_debug = await orch.build_trusted_facts(
-                topic=inferred_topic,
-                message=clean_message,
-            )
-            sources_out.extend(trusted_refs)
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("Trusted API orchestration failed: %s", exc)
-            trusted_debug = {"trusted_api_error": str(exc)}
-    else:
-        trusted_debug = {"trusted_api_skipped": True, "trusted_api_reason": "static_kb_matched"}
+    sources_out.extend(trusted_refs)
 
     for fact in facts:
         match = re.search(r"\(([^)]+)\)\.$", fact.strip())
