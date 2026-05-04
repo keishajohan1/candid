@@ -4,6 +4,16 @@ Entries record prompts used for substantial AI-assisted changes (no secrets).
 
 ---
 
+## 2026-04-28 — `feature/ci-cloud-run-deploy`
+
+**Prompt (summary):** Replace placeholder GitHub Actions deploy job with automated Artifact Registry + Cloud Run deploy; document required GCP and GitHub configuration.
+
+**Changes implemented:** `.github/workflows/ci.yml` deploy job (auth, Docker push, backend/frontend `gcloud run deploy`, CORS update); **`docs/cloud-run-ci.md`**; **`README.md`** link under Cloud Run.
+
+**Branch:** `feature/ci-cloud-run-deploy`
+
+---
+
 ## 2026-04-28 — `feature/ui-minimal-chat-message-driven-topic`
 
 **Prompt (summary):** Remove all developer/sidebar topic UI in frontend; send only message/history/turn_index from client; make backend Reddit query message-driven; remove `topic`/`developer_mode` request flags; add prompt fallback to user message when topic is absent.

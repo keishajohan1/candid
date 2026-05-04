@@ -15,7 +15,7 @@ The project is designed to guide users through facts, sources, and multiple pers
 - `backend/app/prompts/` modular Socratic prompt skills (`builder.py`, `skills/`, `formatters.py`, `user_content.py`); `backend/app/utils/prompts.py` compatibility re-exports (see `backend/README.md`).
 - `backend/app/services/trusted_data/` Tier 1B trusted API orchestration (World Bank, optional FRED, optional UN bearer).
 - `frontend/` React + Vite web client scaffold.
-- `docs/` future architecture, product, and operations docs.
+- `docs/` architecture, product, and operations notes (e.g. **`docs/cloud-run-ci.md`** for GitHub → Cloud Run deploy).
 
 ## API endpoints (backend, prefix `/api/v1` unless noted)
 
@@ -75,6 +75,8 @@ Frontend defaults to `http://localhost:5173` and calls backend at `http://localh
 
 Recommended deployment pattern:
 - Deploy backend and frontend as separate Cloud Run services for independent scaling, release cadence, and simpler API lifecycle controls.
+
+**Automated deploy (GitHub Actions):** On **`push` to `main`**, after tests and stub eval pass, **`.github/workflows/ci.yml`** builds Docker images, pushes to **Artifact Registry**, deploys **`candid-backend`** (port **8080**) and **`candid-frontend`** (port **80**), then sets backend **`FRONTEND_ORIGIN`** for CORS. Configure **GitHub Actions secrets** and one-time **GCP IAM / Artifact Registry** as described in **`docs/cloud-run-ci.md`**.
 
 ## Optional local containers
 

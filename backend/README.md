@@ -55,6 +55,10 @@ From `backend/`:
 
 - `pytest` (uses **`pytest.ini`**: coverage + **80%** gate with **`.coveragerc`** — omits stub `chroma_client`, integration-heavy `reddit_service`, and token-gated `un_client` from coverage totals)
 
+## CI / Cloud Run
+
+Automated image build and Cloud Run deploy from GitHub Actions is documented at the repo root in **`docs/cloud-run-ci.md`** (uses **`backend/Dockerfile`** from the repository root in CI).
+
 ## Limitations / not production-ready
 
 - No conversation persistence; `turn_index` / `history` are client-supplied.
